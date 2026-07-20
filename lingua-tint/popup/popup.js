@@ -53,10 +53,18 @@ $('enabled').addEventListener('change', function (e) {
 
 $('germanEnabled').addEventListener('change', function (e) {
   saveSetting('germanEnabled', e.target.checked);
+  var de = document.querySelector('.preview-de');
+  if (de) {
+    de.style.opacity = e.target.checked ? '1' : '0.3';
+  }
 });
 
 $('spanishEnabled').addEventListener('change', function (e) {
   saveSetting('spanishEnabled', e.target.checked);
+  var es = document.querySelector('.preview-es');
+  if (es) {
+    es.style.opacity = e.target.checked ? '1' : '0.3';
+  }
 });
 
 var modeRadios = document.querySelectorAll('input[name="siteMode"]');
@@ -68,14 +76,25 @@ for (var i = 0; i < modeRadios.length; i++) {
   });
 }
 
+var debounceDE = null;
+var debounceES = null;
+
 $('germanColor').addEventListener('input', function (e) {
-  saveSetting('germanColor', e.target.value);
-  chrome.storage.sync.get(DEFAULTS, updatePreview);
+  var de = document.querySelector('.preview-de');
+  if (de) de.style.color = e.target.value;
+  clearTimeout(debounceDE);
+  debounceDE = setTimeout(function () {
+    saveSetting('germanColor', e.target.value);
+  }, 200);
 });
 
 $('spanishColor').addEventListener('input', function (e) {
-  saveSetting('spanishColor', e.target.value);
-  chrome.storage.sync.get(DEFAULTS, updatePreview);
+  var es = document.querySelector('.preview-es');
+  if (es) es.style.color = e.target.value;
+  clearTimeout(debounceES);
+  debounceES = setTimeout(function () {
+    saveSetting('spanishColor', e.target.value);
+  }, 200);
 });
 
 chrome.storage.onChanged.addListener(function () {

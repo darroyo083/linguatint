@@ -63,29 +63,47 @@ function processTextNode(textNode) {
     });
   }
 
-  const expandedSegments = [];
-  for (const seg of rawSegments) {
-    if (seg.language === 'spanish') {
-      expandedSegments.push(seg);
+  var expandedSegments = [];
+  for (var s = 0; s < rawSegments.length; s++) {
+    if (rawSegments[s].language === 'spanish') {
+      expandedSegments.push(rawSegments[s]);
     } else {
-      expandedSegments.push(...sentenceLevelSegments(seg.text));
+      var subs = sentenceLevelSegments(rawSegments[s].text);
+      for (var t = 0; t < subs.length; t++) {
+        expandedSegments.push(subs[t]);
+      }
     }
   }
 
-  const hasColor = expandedSegments.some(s => s.language !== 'neutral');
-  if (!hasColor) return;
-
-  const fragment = document.createDocumentFragment();
-  for (const seg of expandedSegments) {
-    if (seg.language === 'neutral') {
-      fragment.appendChild(document.createTextNode(seg.text));
-    } else if (
+  var effectiveSegments = [];
+  for (var s = 0; s < expandedSegments.length; s++) {
+    var seg = expandedSegments[s];
+    if (
       (seg.language === 'german' && !settings.germanEnabled) ||
       (seg.language === 'spanish' && !settings.spanishEnabled)
     ) {
+      effectiveSegments.push({ text: seg.text, language: 'neutral' });
+    } else {
+      effectiveSegments.push(seg);
+    }
+  }
+
+  var hasColor = false;
+  for (var s = 0; s < effectiveSegments.length; s++) {
+    if (effectiveSegments[s].language !== 'neutral') {
+      hasColor = true;
+      break;
+    }
+  }
+  if (!hasColor) return;
+
+  var fragment = document.createDocumentFragment();
+  for (var s = 0; s < effectiveSegments.length; s++) {
+    var seg = effectiveSegments[s];
+    if (seg.language === 'neutral') {
       fragment.appendChild(document.createTextNode(seg.text));
     } else {
-      const span = document.createElement('span');
+      var span = document.createElement('span');
       span.className = 'lingua-tint-span';
       span.setAttribute('data-lingua-lang', seg.language);
       span.style.color = seg.language === 'german' ? settings.germanColor : settings.spanishColor;
@@ -289,24 +307,58 @@ function applySettings(changedKeys) {
   processDocument();
 }
 
-let observer = null;
+var pendingNodes = [];
+var pendingChars = [];
+var observerTimer = null;
+var observer = null;
+
+function flushObserver() {
+  observerTimer = null;
+  if (!shouldProcess()) {
+    pendingNodes = [];
+    pendingChars = [];
+    return;
+  }
+
+  for (var i = 0; i < pendingNodes.length; i++) {
+    var node = pendingNodes[i];
+    if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute && node.getAttribute('data-lingua-processed') === 'true') continue;
+    if (node.nodeType === Node.TEXT_NODE && node.parentElement && node.parentElement.getAttribute('data-lingua-processed') === 'true') continue;
+    processNode(node);
+  }
+
+  for (var i = 0; i < pendingChars.length; i++) {
+    var entry = pendingChars[i];
+    var p = entry.parent;
+    if (p && p.getAttribute('data-lingua-processed') === 'true') {
+      p.removeAttribute('data-lingua-processed');
+    }
+    processTextNode(entry.node);
+  }
+
+  pendingNodes = [];
+  pendingChars = [];
+}
 
 function startObserver() {
   if (observer) observer.disconnect();
 
   observer = new MutationObserver(function (mutations) {
-    if (!shouldProcess()) return;
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        processNode(node);
+    for (var m = 0; m < mutations.length; m++) {
+      var mutation = mutations[m];
+      for (var n = 0; n < mutation.addedNodes.length; n++) {
+        pendingNodes.push(mutation.addedNodes[n]);
       }
       if (mutation.type === 'characterData') {
-        const p = mutation.target.parentElement;
-        if (p && p.getAttribute('data-lingua-processed') === 'true') {
-          p.removeAttribute('data-lingua-processed');
-        }
-        processTextNode(mutation.target);
+        pendingChars.push({
+          node: mutation.target,
+          parent: mutation.target.parentElement,
+        });
       }
+    }
+
+    if (!observerTimer) {
+      observerTimer = setTimeout(flushObserver, 30);
     }
   });
 
