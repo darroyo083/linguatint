@@ -19,7 +19,7 @@ function detectLanguage(text) {
     'der','die','das','dem','den','des','ist','sind','und','ein','eine','einen','einer','eines','einem',
     'nicht','mit','von','zu','sich','auch','werden','sein','hat','habe','hast','haben','bin','bist',
     'seid','kann','können','muss','müssen','will','wollen','für','auf','bei','aus','nach','ich','du',
-    'er','sie','es','wir','ihr','aber','oder','schon','sehr','immer','kein','keine','keinen','keiner',
+    'er','sie','wir','ihr','aber','oder','schon','sehr','immer','kein','keine','keinen','keiner',
     'keines','keinem','mein','dein','sein','meine','deine','seine','dieser','diese','dieses','diesem',
     'diesen','man','noch','wieder','nur','doch','alle','viel','viele','vielen','vieler','wenig','klein',
     'groß','gut','besser','beste','alt','jung','neu','erste','letzte','nächste','andere','anderer',
@@ -31,7 +31,16 @@ function detectLanguage(text) {
     'sobald','indem','dadurch','wodurch','womit','woran','worauf','wovon','wovor','wobei','weshalb',
     'weswegen','trotzdem','dessen','deren','denen','welcher','welche','welches','welchem','welchen',
     'wem','wen','was','wessen','wann','warum','wie','wo','wohin','woher','wieso','weshalb','weswegen',
-    'wodurch','womit','woran','worauf','wovon','wovor','wobei'
+    'wodurch','womit','woran','worauf','wovon','wovor','wobei',
+    'laufen','läuft','laufe','läufst','gehen','geht','gehe','gehst','kommen','kommt','komme','kommst',
+    'machen','macht','mache','machst','sagen','sagt','sage','sagst','wissen','weiß','weißt','wusste',
+    'denken','denkt','denke','denkst','glauben','glaubt','glaube','glaubst','helfen','hilft','helfe',
+    'bringen','bringt','bringe','bringst','nehmen','nimmt','nehme','nimmst','lassen','lässt','lasse',
+    'sehen','sieht','sehe','siehst','geben','gibt','gebe','gibst','finden','findet','finde','findest',
+    'halten','hält','halte','hältst','setzen','setzt','setze','treiben','treibt','treibe','tragen',
+    'trägt','trage','trägst','bleiben','bleibt','bleibe','liegen','liegt','liege','stehen','steht',
+    'stehe','schreiben','schreibt','schreibe','lesen','liest','lese','sprechen','spricht','spreche',
+    'verstehen','versteht','verstehe'
   ]);
 
   const SPANISH_WORDS = new Set([
@@ -56,7 +65,16 @@ function detectLanguage(text) {
     'tarde','siempre','nunca','jamás','tampoco','aquí','allí','allá','acá','ahí','cerca','lejos',
     'arriba','abajo','dentro','fuera','encima','debajo','delante','detrás','enfrente','atrás',
     'siquiera','quizá','quizás','acaso','tal','vez','acá','así','casi','medio','además','apenas',
-    'incluso','excepto','salvo','menos','mediante'
+    'incluso','excepto','salvo','menos','mediante',
+    'fui','fue','fuiste','fuimos','fueron','fuera','fuese','ir','voy','vas','va','vamos','van',
+    'iba','ibas','íbamos','iban','ido','yendo','ido','al','del','era','eras','éramos','eran',
+    'sea','seas','seamos','sean','ser','sido','siendo','caminar','camino','camina','caminan',
+    'hablar','hablo','habla','hablan','habló','hablaba','comer','como','come','comen','comió',
+    'vivir','vivo','vive','viven','vivió','tener','tiene','tienen','tengo','tenemos','tenía',
+    'poder','puedo','puede','pueden','pudimos','pudo','hacer','hago','hace','hacen','hizo',
+    'hacía','poner','pongo','pone','ponen','puso','decir','digo','dice','dicen','dijo','saber',
+    'sé','sabe','saben','supo','dar','doy','da','dan','dio','ver','veo','ve','ven','vio','visto',
+    'querer','quiero','quiere','quieren','quiso','sentir','siento','siente','sienten','sintió'
   ]);
 
   for (const word of words) {
@@ -64,7 +82,7 @@ function detectLanguage(text) {
     if (clean.length < 2) continue;
 
     if (/[ßöäüÖÄÜ]/.test(clean)) germanScore += 3;
-    if (/[ñáéíóúüÑÁÉÍÓÚÜ]/.test(clean)) spanishScore += 3;
+    if (/[ñáéíóúÑÁÉÍÓÚ]/.test(clean)) spanishScore += 3;
 
     if (GERMAN_WORDS.has(clean.toLowerCase())) germanScore += 2;
     if (SPANISH_WORDS.has(clean.toLowerCase())) spanishScore += 2;

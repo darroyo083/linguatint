@@ -32,10 +32,10 @@ function processTextNode(textNode) {
 
   const parent = textNode.parentElement;
   if (!parent) return;
-  if (parent.getAttribute('data-lingua-processed') === 'true') return;
+  if (parent.classList.contains('lingua-tint-span')) return;
   if (isSkippedAncestor(parent)) return;
 
-  const parenRegex = /\([^)]++\)/g;
+  const parenRegex = /\([^)]+\)/g;
   const rawSegments = [];
   let lastIndex = 0;
   let match;
@@ -97,16 +97,9 @@ function wordLevelSegments(text) {
   }
 
   const wordLangs = parts.map((part, i) => {
-    const clean = part.trim();
-    let windowText;
-    if (clean.length <= 2) {
-      const start = Math.max(0, i - 2);
-      const end = Math.min(parts.length, i + 3);
-      windowText = parts.slice(start, end).join('');
-    } else {
-      const end = Math.min(parts.length, i + 5);
-      windowText = parts.slice(i, end).join('');
-    }
+    const start = Math.max(0, i - 2);
+    const end = Math.min(parts.length, i + 3);
+    const windowText = parts.slice(start, end).join('');
     return { text: part, lang: detectLanguage(windowText) };
   });
 
@@ -142,6 +135,7 @@ function processNode(node) {
   if (node.nodeType === Node.TEXT_NODE) {
     processTextNode(node);
   } else if (node.nodeType === Node.ELEMENT_NODE) {
+    if (node.classList && node.classList.contains('lingua-tint-span')) return;
     if (node.getAttribute && node.getAttribute('data-lingua-processed') === 'true') return;
     if (isSkippedAncestor(node)) return;
 

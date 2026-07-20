@@ -6,10 +6,11 @@
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://notebooklm.google.com/*",
+    "file:///*",
     "<all_urls>"
   ],
   "content_scripts": [{
-    "matches": ["https://notebooklm.google.com/*", "<all_urls>"],
+    "matches": ["https://notebooklm.google.com/*", "file:///*", "<all_urls>"],
     "js": ["content/language-detector.js", "content/content.js"],
     "run_at": "document_idle"
   }],

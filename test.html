@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>LinguaTint — Prueba manual</title>
+</head>
+<body>
+  <h1>LinguaTint — Manual Test</h1>
+
+  <h2>1. Texto bilingüe con paréntesis</h2>
+  <p>Der Hund ist braun und läuft im Park (el perro es marrón y corre por el parque)</p>
+
+  <h2>2. Alemán puro</h2>
+  <p>Gestern war ich im Wald spazieren und habe viele Vögel gesehen.</p>
+
+  <h2>3. Español puro</h2>
+  <p>Ayer fui a caminar al bosque y vi muchos pájaros.</p>
+
+  <h2>4. Mixto sin paréntesis</h2>
+  <p>Der Hund ist braun — el perro es marrón</p>
+
+  <h2>5. Solo mayúsculas en medio (sustantivos alemán)</h2>
+  <p>Die Frau geht in die Stadt und kauft ein neues Haus.</p>
+
+  <h2>6. Caracteres especiales</h2>
+  <p>ß, ö, ä, ü — ñ, é, í, ó, ú</p>
+  <p>Straße, schön, Mädchen, führen — canción, educación, fácilmente</p>
+
+  <h2>7. Neutral (no debería colorear)</h2>
+  <p>123 ... !? Hello World</p>
+
+  <hr>
+  <p><strong>Instrucciones:</strong> Abre la consola (F12) y escribe <code>testLingua()</code> para
+  ver qué detecta el algoritmo para cada párrafo.</p>
+
+  <script src="lingua-tint/content/language-detector.js"></script>
+  <script>
+  function testLingua() {
+    const tests = document.querySelectorAll('p');
+    tests.forEach(function(p, i) {
+      const text = p.textContent.trim();
+      if (text.length < 3) return;
+      const lang = detectLanguage(text);
+      console.log('P' + (i+1) + ': ' + lang.toUpperCase() + ' → "' + text.substring(0, 50) + '"');
+    });
+  }
+  testLingua();
+  </script>
+</body>
+</html>
