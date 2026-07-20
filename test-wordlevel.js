@@ -10,38 +10,54 @@ vm.runInThisContext(code);
 
 // Inline the wordLevelSegments logic (same algorithm as content.js)
 function wordLevelSegments(text) {
-  const parts = text.match(/\S+\s*/g);
+  var parts = text.match(/\S+\s*/g);
   if (!parts || parts.length === 0) {
-    return [{ text, language: 'neutral' }];
+    return [{ text: text, language: 'neutral' }];
   }
 
-  const wordLangs = parts.map((part, i) => {
-    const start = Math.max(0, i - 2);
-    const end = Math.min(parts.length, i + 3);
-    const windowText = parts.slice(start, end).join('');
-    const lang = detectLanguage(windowText);
-    return { text: part, lang };
+  var wordTokens = parts.filter(function (p) {
+    return /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(p);
+  });
+  if (wordTokens.length === 0) {
+    return [{ text: text, language: 'neutral' }];
+  }
+
+  var tokenLangs = wordTokens.map(function (token, i) {
+    var start = Math.max(0, i - 2);
+    var end = Math.min(wordTokens.length, i + 3);
+    var windowText = wordTokens.slice(start, end).join('');
+    return { text: token, lang: detectLanguage(windowText) };
   });
 
-  const groups = [];
-  let currentLang = wordLangs[0]?.lang || 'neutral';
-  let currentText = '';
+  var wordIdx = 0;
+  var partLangs = parts.map(function (part) {
+    if (/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(part)) {
+      var result = tokenLangs[wordIdx];
+      wordIdx++;
+      return { text: part, lang: result.lang };
+    }
+    return { text: part, lang: 'neutral' };
+  });
 
-  for (const w of wordLangs) {
-    if (w.lang === currentLang) {
-      currentText += w.text;
+  var groups = [];
+  var currentLang = partLangs[0]?.lang || 'neutral';
+  var currentText = '';
+
+  for (var i = 0; i < partLangs.length; i++) {
+    if (partLangs[i].lang === currentLang) {
+      currentText += partLangs[i].text;
     } else {
       groups.push({ text: currentText, language: currentLang });
-      currentLang = w.lang;
-      currentText = w.text;
+      currentLang = partLangs[i].lang;
+      currentText = partLangs[i].text;
     }
   }
   if (currentText) {
     groups.push({ text: currentText, language: currentLang });
   }
 
-  return groups.map(g => {
-    const wordCount = g.text.trim().split(/\s+/).length;
+  return groups.map(function (g) {
+    var wordCount = g.text.trim().split(/\s+/).length;
     if (g.language !== 'neutral' && wordCount < 3) {
       return { text: g.text, language: 'neutral' };
     }

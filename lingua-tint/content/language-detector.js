@@ -40,7 +40,19 @@ function detectLanguage(text) {
     'halten','hält','halte','hältst','setzen','setzt','setze','treiben','treibt','treibe','tragen',
     'trägt','trage','trägst','bleiben','bleibt','bleibe','liegen','liegt','liege','stehen','steht',
     'stehe','schreiben','schreibt','schreibe','lesen','liest','lese','sprechen','spricht','spreche',
-    'verstehen','versteht','verstehe'
+    'verstehen','versteht','verstehe',
+    'katze','katzen','hund','hunde','pferd','pferde','vogel','vögel','fisch','fische','maus','mäuse',
+    'schaf','schafe','kuh','kühe','schwein','schweine','hase','hasen','haus','häuser','tisch','tische',
+    'stuhl','stühle','bett','betten','tür','türen','fenster','buch','bücher','lampe','lampen',
+    'uhr','uhren','wasser','brot','milch','käse','fleisch','obst','gemüse','kaffee','tee','bier',
+    'wein','saft','essen','isst','esse','trinken','trinkt','trinke','schlafen','schläft','schlafe',
+    'fahren','fährt','fahre','spielen','spielt','spiele','arbeiten','arbeitet','arbeite','wohnen',
+    'wohnt','wohne','heißen','heißt','heiße','lernen','lernt','lerne','kaufen','kauft','kaufe',
+    'verkaufen','verkauft','verkaufe','suchen','sucht','suche',
+    'mann','frau','kind','kinder','junge','jungen','mädchen','eltern','familie','bruder','schwester',
+    'vater','mutter','sohn','tochter','freund','freunde','freundin',
+    'schule','universität','stadt','dorf','land','straße','platz','garten','park','wald','see',
+    'fluss','berg','meer','tag','nacht','morgen','abend','woche','monat','jahr','zeit','stunde'
   ]);
 
   const SPANISH_WORDS = new Set([
@@ -74,7 +86,28 @@ function detectLanguage(text) {
     'poder','puedo','puede','pueden','pudimos','pudo','hacer','hago','hace','hacen','hizo',
     'hacía','poner','pongo','pone','ponen','puso','decir','digo','dice','dicen','dijo','saber',
     'sé','sabe','saben','supo','dar','doy','da','dan','dio','ver','veo','ve','ven','vio','visto',
-    'querer','quiero','quiere','quieren','quiso','sentir','siento','siente','sienten','sintió'
+    'querer','quiero','quiere','quieren','quiso','sentir','siento','siente','sienten','sintió',
+    'gato','gata','gatos','gatas','perro','perra','perros','perras','pájaro','pájaros','pez','peces',
+    'caballo','caballos','vaca','vacas','oveja','ovejas','cerdo','cerdos','conejo','conejos',
+    'pato','patos','gallina','gallinas','ratón','ratones',
+    'casa','casas','libro','libros','mesa','mesas','silla','sillas','cama','camas','puerta','puertas',
+    'ventana','ventanas','lámpara','lámparas','reloj','relojes','cuadro','cuadros',
+    'agua','leche','pan','queso','carne','fruta','frutas','verdura','verduras','café','té','cerveza',
+    'vino','zumo',
+    'beber','bebe','bebo','bebes','beben','comer','come','como','comes','comen','leer','lee','leo',
+    'lees','leen','dormir','duerme','duermo','duermes','duermen','escribir','escribe','escribo',
+    'escribes','escriben','estudiar','estudia','estudio','estudias','estudian','trabajar','trabaja',
+    'trabajo','trabajas','trabajan','vivir','vive','vivo','vives','viven','comprar','compra','compro',
+    'compras','compran','vender','vende','vendo','vendes','venden','buscar','busca','busco','buscas',
+    'buscan','jugar','juega','juego','juegas','juegan','pensar','piensa','pienso','piensas','piensan',
+    'hombre','hombres','mujer','mujeres','niño','niña','niños','niñas','chico','chica','chicos',
+    'chicas','padres','hermano','hermana','hermanos','hermanas','padre','madre','hijo','hija',
+    'hijos','hijas','amigo','amiga','amigos','amigas',
+    'escuela','colegio','ciudad','ciudades','pueblo','pueblos','país','países','calle','calles',
+    'plaza','plazas','jardín','jardines','parque','parques','bosque','bosques','lago','lagos',
+    'río','ríos','montaña','montañas','mar',
+    'día','días','noche','noches','mañana','tardes','tarde','semana','semanas','mes','meses','año',
+    'años','hora','horas','minuto','minutos'
   ]);
 
   for (const word of words) {

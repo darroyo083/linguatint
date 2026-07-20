@@ -71,7 +71,7 @@ assert('termina en -dad → spanish (with context)', detectLanguage('la universi
 assert('termina en -mente → spanish +1', detectLanguage('fácilmente'), 'spanish');
 
 // Capital letter bonus (German nouns)
-assert('capital word → german +1', detectLanguage('Hund'), 'neutral'); // single word, score 1 < 3
+assert('capital word in dict → german', detectLanguage('Hund'), 'german'); // now 'hund' is in GERMAN_WORDS
 assert('capital with context → german', detectLanguage('der Hund ist'), 'german');
 
 console.log('\n---');
