@@ -71,7 +71,35 @@ assert('termina en -dad → spanish (with context)', detectLanguage('la universi
 assert('termina en -mente → spanish +1', detectLanguage('fácilmente'), 'spanish');
 
 // Capital letter bonus (German nouns)
-assert('capital word in dict → german', detectLanguage('Hund'), 'german'); // now 'hund' is in GERMAN_WORDS
+assert('capital word in dict → german', detectLanguage('Hund'), 'german');
 assert('capital with context → german', detectLanguage('der Hund ist'), 'german');
+
+// Character pattern detection
+assert('"sch" pattern → german', detectLanguage('Schule besuchen'), 'german');
+assert('"cht" pattern → german', detectLanguage('Die Nacht ist'), 'german');
+assert('"ung" pattern → german', detectLanguage('Zeitung lesen'), 'german');
+assert('"que" pattern → spanish', detectLanguage('que pasa'), 'spanish');
+assert('"ión" pattern → spanish', detectLanguage('la canción'), 'spanish');
+
+// Full mixed text → detectLanguage returns dominant language (sentence-level split is in content.js)
+assert('mixed sentences → german dominant', detectLanguage('Gestern war ich im Wald spazieren. Ayer fui a caminar al bosque.'), 'german');
+
+// Full sentence contexts
+assert('spazieren in full sentence', detectLanguage('Gestern war ich im Wald spazieren'), 'german');
+assert('ayer in full sentence', detectLanguage('Ayer fui a caminar al bosque'), 'spanish');
+
+// scoreLanguage function
+var score1 = scoreLanguage('Der Hund ist braun');
+assert('scoreLanguage german german > spanish', score1.german > score1.spanish, true);
+
+var score2 = scoreLanguage('el perro es marrón');
+assert('scoreLanguage spanish > german', score2.spanish > score2.german, true);
+
+var score3 = scoreLanguage('12345');
+assert('scoreLanguage neutral both zero', score3.german === 0 && score3.spanish === 0, true);
+
+// Paren detection via scoreLanguage
+var score4 = scoreLanguage('(esto es español)');
+assert('scoreLanguage parens spanish > 0', score4.spanish > 0, true);
 
 console.log('\n---');

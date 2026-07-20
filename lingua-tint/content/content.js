@@ -66,7 +66,7 @@ function processTextNode(textNode) {
     if (seg.language === 'spanish') {
       expandedSegments.push(seg);
     } else {
-      expandedSegments.push(...wordLevelSegments(seg.text));
+      expandedSegments.push(...sentenceLevelSegments(seg.text));
     }
   }
 
@@ -144,6 +144,56 @@ function wordLevelSegments(text) {
     }
     return g;
   });
+}
+
+function splitSentences(text) {
+  var result = [];
+  var parts = text.match(/[^.!?\n]+[.!?]*(\s+|$)/g);
+  if (!parts || parts.length === 0) {
+    return [text];
+  }
+  for (var i = 0; i < parts.length; i++) {
+    var s = parts[i];
+    if (/^[\s.,;:!?]+$/.test(s.trim())) continue;
+    result.push(s);
+  }
+  return result.length > 0 ? result : [text];
+}
+
+function sentenceLevelSegments(text) {
+  var sentences = splitSentences(text);
+  if (sentences.length <= 1) {
+    return wordLevelSegments(text);
+  }
+
+  var result = [];
+  for (var i = 0; i < sentences.length; i++) {
+    var sentence = sentences[i];
+    if (sentence.trim().length < 3) {
+      result.push({ text: sentence, language: 'neutral' });
+      continue;
+    }
+
+    var scores = scoreLanguage(sentence);
+    var total = scores.german + scores.spanish;
+
+    if (total >= 3) {
+      var ratio = Math.max(scores.german, scores.spanish) / total;
+      var lang = scores.german > scores.spanish ? 'german' : 'spanish';
+
+      if (ratio >= 0.7 && scores[lang] >= 3) {
+        result.push({ text: sentence, language: lang });
+        continue;
+      }
+    }
+
+    var sub = wordLevelSegments(sentence);
+    for (var j = 0; j < sub.length; j++) {
+      result.push(sub[j]);
+    }
+  }
+
+  return result;
 }
 
 function processNode(node) {
