@@ -33,21 +33,28 @@
     </section>
 
     <section class="section">
-      <h2>Colores</h2>
+      <h2>Idiomas y colores</h2>
+
       <div class="color-row">
-        <label class="color-label">
-          <span class="lang-tag lang-de">DE</span>
-          Alemán
+        <span class="lang-tag lang-de">DE</span>
+        <span class="lang-name">Alemán</span>
+        <label class="switch">
+          <input type="checkbox" id="germanEnabled">
+          <span class="slider"></span>
         </label>
-        <input type="color" id="germanColor">
+        <input type="color" id="germanColor" class="color-picker">
       </div>
+
       <div class="color-row">
-        <label class="color-label">
-          <span class="lang-tag lang-es">ES</span>
-          Español
+        <span class="lang-tag lang-es">ES</span>
+        <span class="lang-name">Español</span>
+        <label class="switch">
+          <input type="checkbox" id="spanishEnabled">
+          <span class="slider"></span>
         </label>
-        <input type="color" id="spanishColor">
+        <input type="color" id="spanishColor" class="color-picker">
       </div>
+
       <div class="preview">
         <span class="preview-de">der Hund</span>
         <span class="preview-sep"> — </span>

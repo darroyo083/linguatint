@@ -39,7 +39,13 @@ var GERMAN_WORDS = new Set([
   'ja','nein','doch','war','warst','waren','wart','spazieren','spazierte','spazierten','gestern','heute','morgen',
   'jetzt','dann','dort','hier','später','früher','danach','vorher','deshalb','trotzdem',
   'tun','tat','getan','legen','legte','gelegt','stellen','stellte','gestellt','setzte','gesetzt',
-  'beginnen','beginnt','begann','begonnen','enden','endet','endete','geendet'
+  'beginnen','beginnt','begann','begonnen','enden','endet','endete','geendet',
+  'eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun','zehn',
+  'elf','zwölf','zwanzig','dreißig','hundert','tausend',
+  'kindern','kindes','kinde','mannes','mannen','frauen','kindes','hauses','buches',
+  'tisches','stuhles','bettes','wassers','brotes','milches','kaffees','tees',
+  'tages','nachts','jahres','zeiten','minuten','stunden','wochen','monate','monaten',
+  'name','namen','glaubens','willen','frieden'
 ]);
 
 var SPANISH_WORDS = new Set([
@@ -112,13 +118,38 @@ var SPANISH_WORDS = new Set([
 
 var GERMAN_PATTERNS = [
   /\bsch/, /cht/, /\bge\w{2}/, /ei(t|n|g)/, /ung\b/, /eit/, /\bvor/, /\bnach/, /\bbei/,
-  /\bauf/, /\baus/, /ß/, /ö/, /ä/, /ü/
+  /\bauf/, /\baus/, /ß/, /ö/, /ä/, /ü/, /tz/, /pf/, /st\b/, /en\b/, /er\b/, /liche/
 ];
 
 var SPANISH_PATTERNS = [
   /\bqu[eé]/, /ión\b/, /dad\b/, /tad\b/, /mente\b/, /ez\b/, /eza\b/, /ista\b/,
-  /\best/, /\bent/, /más\b/, /ñ/, /[éíóú]/
+  /\best/, /\bent/, /más\b/, /ñ/, /[éíóú]/, /mient/, /ción/, /cción/, /miento/, /mienta/
 ];
+
+function trySplitCompound(word) {
+  var lower = word.toLowerCase();
+  for (var split = 2; split < lower.length; split++) {
+    var left = lower.slice(0, split);
+    var right = lower.slice(split);
+    if (left.length < 2 || right.length < 2) continue;
+    var rightIsCap = word[split] === word[split].toUpperCase() && word[split] !== word[split].toLowerCase();
+    var gLeft = GERMAN_WORDS.has(left);
+    var gRight = GERMAN_WORDS.has(right);
+    var sLeft = SPANISH_WORDS.has(left);
+    var sRight = SPANISH_WORDS.has(right);
+    if ((gLeft || sLeft) && (gRight || sRight)) {
+      var result = { german: 0, spanish: 0 };
+      if (gLeft) result.german += 2;
+      if (sLeft) result.spanish += 2;
+      if (gRight) result.german += 2;
+      if (sRight) result.spanish += 2;
+      if (rightIsCap) result.german += 1;
+      if (left.length === 4 && /^[A-Z]/.test(word[0])) result.german += 1;
+      return result;
+    }
+  }
+  return null;
+}
 
 function scoreLanguage(text) {
   var trimmed = text.trim();
@@ -147,17 +178,30 @@ function scoreLanguage(text) {
   }
 
   for (var i = 0; i < words.length; i++) {
-    var clean = words[i].replace(/[^\wáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/g, '');
+    var raw = words[i];
+    var clean = raw.replace(/[^\wáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/g, '');
     if (clean.length < 2) continue;
 
     if (/[ßöäüÖÄÜ]/.test(clean)) german += 3;
     if (/[ñáéíóúÑÁÉÍÓÚ]/.test(clean)) spanish += 3;
 
-    if (GERMAN_WORDS.has(clean.toLowerCase())) german += 2;
-    if (SPANISH_WORDS.has(clean.toLowerCase())) spanish += 2;
+    var lower = clean.toLowerCase();
+    var inGerman = GERMAN_WORDS.has(lower);
+    var inSpanish = SPANISH_WORDS.has(lower);
+
+    if (inGerman) german += 2;
+    if (inSpanish) spanish += 2;
+
+    if (!inGerman && !inSpanish && clean.length >= 4) {
+      var splitResult = trySplitCompound(clean);
+      if (splitResult) {
+        if (splitResult.german) german += splitResult.german;
+        if (splitResult.spanish) spanish += splitResult.spanish;
+      }
+    }
 
     if (/^[A-ZÄÖÜ][a-zäöüß]/.test(clean)) german += 1;
-    if (/(ción|sión|dad|tad|mente|ez|eza|ista)$/.test(clean.toLowerCase())) spanish += 1;
+    if (/(ción|sión|dad|tad|mente|ez|eza|ista)$/.test(lower)) spanish += 1;
   }
 
   for (var p = 0; p < GERMAN_PATTERNS.length; p++) {

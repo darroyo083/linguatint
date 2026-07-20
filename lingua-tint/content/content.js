@@ -3,6 +3,8 @@ const DEFAULTS = {
   siteMode: 'notebooklm',
   germanColor: '#2563eb',
   spanishColor: '#16a34a',
+  germanEnabled: true,
+  spanishEnabled: true,
 };
 
 let settings = { ...DEFAULTS };
@@ -77,9 +79,15 @@ function processTextNode(textNode) {
   for (const seg of expandedSegments) {
     if (seg.language === 'neutral') {
       fragment.appendChild(document.createTextNode(seg.text));
+    } else if (
+      (seg.language === 'german' && !settings.germanEnabled) ||
+      (seg.language === 'spanish' && !settings.spanishEnabled)
+    ) {
+      fragment.appendChild(document.createTextNode(seg.text));
     } else {
       const span = document.createElement('span');
       span.className = 'lingua-tint-span';
+      span.setAttribute('data-lingua-lang', seg.language);
       span.style.color = seg.language === 'german' ? settings.germanColor : settings.spanishColor;
       span.textContent = seg.text;
       fragment.appendChild(span);
@@ -206,6 +214,8 @@ function processNode(node) {
     if (node.getAttribute && node.getAttribute('data-lingua-processed') === 'true') return;
     if (isSkippedAncestor(node)) return;
 
+    node.normalize();
+
     const walker = document.createTreeWalker(
       node,
       NodeFilter.SHOW_TEXT,
@@ -250,12 +260,33 @@ function processDocument() {
   processNode(document.body);
 }
 
-function applySettings() {
-  if (shouldProcess()) {
-    processDocument();
-  } else {
-    restoreDocument();
+function isCosmetic(key) {
+  return key === 'germanColor' || key === 'spanishColor';
+}
+
+function updateColors() {
+  var spans = document.querySelectorAll('.lingua-tint-span');
+  for (var i = 0; i < spans.length; i++) {
+    var span = spans[i];
+    var lang = span.getAttribute('data-lingua-lang');
+    if (lang === 'german') span.style.color = settings.germanColor;
+    else if (lang === 'spanish') span.style.color = settings.spanishColor;
   }
+}
+
+function applySettings(changedKeys) {
+  if (!shouldProcess()) {
+    restoreDocument();
+    return;
+  }
+
+  if (changedKeys && changedKeys.length > 0 && changedKeys.every(isCosmetic)) {
+    updateColors();
+    return;
+  }
+
+  restoreDocument();
+  processDocument();
 }
 
 let observer = null;
@@ -294,10 +325,11 @@ function init() {
   });
 
   chrome.storage.onChanged.addListener(function (changes) {
-    for (const key in changes) {
-      settings[key] = changes[key].newValue;
+    var keys = Object.keys(changes);
+    for (var i = 0; i < keys.length; i++) {
+      settings[keys[i]] = changes[keys[i]].newValue;
     }
-    applySettings();
+    applySettings(keys);
   });
 }
 

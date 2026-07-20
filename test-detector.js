@@ -102,4 +102,24 @@ assert('scoreLanguage neutral both zero', score3.german === 0 && score3.spanish 
 var score4 = scoreLanguage('(esto es español)');
 assert('scoreLanguage parens spanish > 0', score4.spanish > 0, true);
 
+// Compound word splitting
+assert('compound einemKind → german', detectLanguage('einemKind'), 'german');
+assert('compound in context → german', detectLanguage('mit einemKind'), 'german');
+
+// Numbers in German (need context for single word)
+assert('zwei with context → german', detectLanguage('zwei Hunde'), 'german');
+assert('drei with context → german', detectLanguage('drei Katzen'), 'german');
+
+// Dative forms
+assert('Kindern → german', detectLanguage('Kindern'), 'german');
+assert('mit Kindern → german', detectLanguage('mit Kindern'), 'german');
+
+// New character patterns
+assert('tz pattern → german', detectLanguage('Katze'), 'german');
+assert('pf pattern → german', detectLanguage('Pferd'), 'german');
+
+// Spanish patterns
+assert('miento → spanish', detectLanguage('el sentimiento'), 'spanish');
+assert('cción → spanish', detectLanguage('la lección'), 'spanish');
+
 console.log('\n---');
