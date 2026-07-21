@@ -19,16 +19,32 @@ function shouldProcess() {
   return true;
 }
 
+function getBlockAncestor(el) {
+  const BLOCK_TAGS = new Set([
+    'P', 'DIV', 'LI', 'BLOCKQUOTE', 'ARTICLE', 'SECTION', 'HEADER', 'FOOTER',
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TD', 'TH', 'MAIN'
+  ]);
+  let current = el;
+  while (current && current.nodeType === Node.ELEMENT_NODE) {
+    if (BLOCK_TAGS.has(current.tagName)) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 function processTextNode(textNode) {
   const text = textNode.textContent;
   const trimmed = text.trim();
-  if (trimmed.length < 3) return;
+  if (trimmed.length < 2) return;
   if (/^[\d\s.,;:!?¡¿()\-_]+$/.test(trimmed)) return;
 
   const parent = textNode.parentElement;
   if (!parent) return;
   if (parent.classList.contains('lingua-tint-span')) return;
   if (isSkippedAncestor(parent)) return;
+
+  const blockEl = getBlockAncestor(parent);
+  const contextText = blockEl ? blockEl.textContent : null;
 
   const parenRegex = /\([^)]+\)/g;
   const rawSegments = [];
@@ -42,11 +58,10 @@ function processTextNode(textNode) {
         language: null,
       });
     }
-    // Use smart detection instead of blindly assuming Spanish
-    var parenLang = detectLanguage(match[0]);
+    var parenLang = detectLanguage(match[0], contextText);
     rawSegments.push({
       text: match[0],
-      language: parenLang === 'neutral' ? 'spanish' : parenLang,
+      language: parenLang === 'neutral' ? null : parenLang,
     });
     lastIndex = match.index + match[0].length;
   }
@@ -63,7 +78,7 @@ function processTextNode(textNode) {
     if (rawSegments[s].language === 'spanish') {
       expandedSegments.push(rawSegments[s]);
     } else {
-      var subs = sentenceLevelSegments(rawSegments[s].text);
+      var subs = sentenceLevelSegments(rawSegments[s].text, contextText);
       for (var t = 0; t < subs.length; t++) {
         expandedSegments.push(subs[t]);
       }
@@ -108,13 +123,10 @@ function processTextNode(textNode) {
   }
 
   parent.replaceChild(fragment, textNode);
-  parent.setAttribute('data-lingua-processed', 'true');
 }
 
 // wordLevelSegments, splitSentences, and sentenceLevelSegments
 // are now in language-detector.js (loaded first via manifest.json)
-
-
 
 function processNode(node) {
   if (!shouldProcess()) return;
@@ -123,7 +135,6 @@ function processNode(node) {
     processTextNode(node);
   } else if (node.nodeType === Node.ELEMENT_NODE) {
     if (node.classList && node.classList.contains('lingua-tint-span')) return;
-    if (node.getAttribute && node.getAttribute('data-lingua-processed') === 'true') return;
     if (isSkippedAncestor(node)) return;
 
     node.normalize();
@@ -135,7 +146,7 @@ function processNode(node) {
         acceptNode: function (n) {
           const p = n.parentElement;
           if (!p) return NodeFilter.FILTER_REJECT;
-          if (p.getAttribute('data-lingua-processed') === 'true') return NodeFilter.FILTER_REJECT;
+          if (p.classList && p.classList.contains('lingua-tint-span')) return NodeFilter.FILTER_REJECT;
           if (isSkippedAncestor(p)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
@@ -150,8 +161,6 @@ function processNode(node) {
     for (const tn of textNodes) {
       processTextNode(tn);
     }
-
-    node.setAttribute('data-lingua-processed', 'true');
   }
 }
 

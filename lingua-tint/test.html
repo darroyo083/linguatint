@@ -2,12 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>LinguaTint — Prueba manual</title>
+  <title>LinguaTint — Manual Test</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 20px; line-height: 1.6; }
+    h2 { margin-top: 24px; font-size: 16px; color: #374151; }
+    p { background: #f9fafb; padding: 10px 14px; border-radius: 6px; }
+    .pass { color: #16a34a; font-weight: bold; }
+    .fail { color: #dc2626; font-weight: bold; }
+  </style>
 </head>
 <body>
   <h1>LinguaTint — Manual Test</h1>
 
-  <h2>1. Texto bilingüe con paréntesis</h2>
+  <h2>1. Bilingüe con paréntesis</h2>
   <p>Der Hund ist braun und läuft im Park (el perro es marrón y corre por el parque)</p>
 
   <h2>2. Alemán puro</h2>
@@ -19,21 +26,31 @@
   <h2>4. Mixto sin paréntesis</h2>
   <p>Der Hund ist braun — el perro es marrón</p>
 
-  <h2>5. Solo mayúsculas en medio (sustantivos alemán)</h2>
-  <p>Die Frau geht in die Stadt und kauft ein neues Haus.</p>
+  <h2>5. Casos del usuario</h2>
+  <p>Sie hilft keiner Nachbarin</p>
+  <p>gratuliert keinem Nachbarin Blumen</p>
+  <p>Sie schenkt keinem MEIN GEBURTSTAG</p>
+  <p>ihrem Freund oder ihrer</p>
+  <p>Mit dem Auto von den Freunden</p>
+  <p>der Freund und seiner den Freunden</p>
+  <p>Maria gibt keinem Schokolade</p>
+  <p>und dem Nachbarin Blumen Mutter</p>
+  <p>dem Vater und dem helfen geben schenken Kollegen Sandwichs</p>
+  <p>Mit dem (7) Auto von den (8) Freunden</p>
+  <p>der einem dem seiner</p>
+  <p>den des mit von zu aus bei</p>
 
   <h2>6. Caracteres especiales</h2>
-  <p>ß, ö, ä, ü — ñ, é, í, ó, ú</p>
   <p>Straße, schön, Mädchen, führen — canción, educación, fácilmente</p>
 
   <h2>7. Neutral (no debería colorear)</h2>
   <p>123 ... !? Hello World</p>
 
   <hr>
-  <p><strong>Instrucciones:</strong> Abre la consola (F12) y escribe <code>testLingua()</code> para
-  ver qué detecta el algoritmo para cada párrafo.</p>
+  <p><strong>Instrucciones:</strong> Abre la consola (F12) y escribe <code>testLingua()</code>.</p>
 
-  <script src="lingua-tint/content/language-detector.js"></script>
+  <script src="content/dictionaries.js"></script>
+  <script src="content/language-detector.js"></script>
   <script>
   function testLingua() {
     const tests = document.querySelectorAll('p');
@@ -41,6 +58,9 @@
       const text = p.textContent.trim();
       if (text.length < 3) return;
       const lang = detectLanguage(text);
+      const pass = lang === 'german' || lang === 'spanish';
+      const label = pass ? 'PASS' : 'NEUTRAL';
+      const cls = pass ? 'pass' : 'fail';
       console.log('P' + (i+1) + ': ' + lang.toUpperCase() + ' → "' + text.substring(0, 50) + '"');
     });
   }

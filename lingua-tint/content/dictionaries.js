@@ -23,6 +23,8 @@ var COGNATE_WORDS = new Set([
 
 // ── German dictionary ──────────────────────────────────────────────────────
 var GERMAN_WORDS = new Set([
+  // ── A1-B1: Household, hygiene, routine verbs & missing conjugations ──
+  'musst','räume','räumst','räumt','räumen','geräumt','aufgeräumt','bügle','bügelst','bügelt','bügeln','gebügelt','sauge','saugst','saugt','saugen','gesaugt','staubsaugen','staubgesaugt','spüle','spülst','spült','spülen','gespült','fege','fegst','fegt','fegen','gefegt','wische','wischst','wischt','wischen','gewischt','trockne','trocknest','trocknet','trocknen','getrocknet','duschen','duscht','dusche','geduscht','baden','badet','bade','gebadet','frühstücken','frühstückt','gefrühstückt','einschlafen','eingeschlafen','telefonieren','telefoniert','sauber','schmutzig','dreckig','ausgezogen','umgezogen','reparieren','repariert','renovieren','renoviert','organisieren','organisiert','diskutieren','diskutiert','funktionieren','funktioniert','informieren','informiert','kontrollieren','kontrolliert','kopieren','kopiert','korrigieren','korrigiert','markieren','markiert','notieren','notiert','probieren','probiert','reagieren','reagiert','reservieren','reserviert',
   'antworten',
   'antwortet',
   'antwortete',

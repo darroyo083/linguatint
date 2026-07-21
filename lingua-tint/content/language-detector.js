@@ -144,14 +144,28 @@ function scoreLanguageInner(trimmed) {
   return { german: german, spanish: spanish, reliable: reliable };
 }
 
-function detectLanguage(text) {
+function detectLanguage(text, contextText) {
   var result = scoreLanguage(text);
   if (result.german > result.spanish && result.german >= 3) return 'german';
   if (result.spanish > result.german && result.spanish >= 3) return 'spanish';
+
+  if (contextText && typeof contextText === 'string' && RE_ALPHA.test(text)) {
+    var ctxResult = scoreLanguage(contextText);
+    var totalCtx = ctxResult.german + ctxResult.spanish;
+    if (totalCtx >= 3) {
+      var ratioCtx = Math.max(ctxResult.german, ctxResult.spanish) / totalCtx;
+      if (ratioCtx >= 0.65) {
+        var dominant = ctxResult.german > ctxResult.spanish ? 'german' : 'spanish';
+        if (dominant === 'german' && result.spanish === 0) return 'german';
+        if (dominant === 'spanish' && result.german === 0) return 'spanish';
+      }
+    }
+  }
+
   return 'neutral';
 }
 
-function wordLevelSegments(text) {
+function wordLevelSegments(text, contextText) {
   var leadingSpaceMatch = text.match(/^\s+/);
   var prefix = leadingSpaceMatch ? leadingSpaceMatch[0] : '';
   var trimmedText = leadingSpaceMatch ? text.slice(prefix.length) : text;
@@ -173,7 +187,7 @@ function wordLevelSegments(text) {
     var start = Math.max(0, i - 2);
     var end = Math.min(wordTokens.length, i + 3);
     var windowText = wordTokens.slice(start, end).join('');
-    return { text: token, lang: detectLanguage(windowText) };
+    return { text: token, lang: detectLanguage(windowText, contextText) };
   });
 
   var wordIdx = 0;
@@ -203,13 +217,7 @@ function wordLevelSegments(text) {
     groups.push({ text: currentText, language: currentLang });
   }
 
-  return groups.map(function (g) {
-    var wordCount = g.text.trim().split(/\s+/).length;
-    if (g.language !== 'neutral' && wordCount < 3) {
-      return { text: g.text, language: 'neutral' };
-    }
-    return g;
-  });
+  return groups;
 }
 
 function splitSentences(text) {
@@ -226,10 +234,10 @@ function splitSentences(text) {
   return result.length > 0 ? result : [text];
 }
 
-function sentenceLevelSegments(text) {
+function sentenceLevelSegments(text, contextText) {
   var sentences = splitSentences(text);
   if (sentences.length <= 1) {
-    return wordLevelSegments(text);
+    return wordLevelSegments(text, contextText);
   }
 
   var result = [];
@@ -253,7 +261,7 @@ function sentenceLevelSegments(text) {
       }
     }
 
-    var sub = wordLevelSegments(sentence);
+    var sub = wordLevelSegments(sentence, contextText);
     for (var j = 0; j < sub.length; j++) {
       result.push(sub[j]);
     }
