@@ -11,7 +11,7 @@
   ],
   "content_scripts": [{
     "matches": ["https://notebooklm.google.com/*", "file:///*", "<all_urls>"],
-    "js": ["content/language-detector.js", "content/content.js"],
+    "js": ["content/defaults.js", "content/dictionaries.js", "content/language-detector.js", "content/content.js"],
     "run_at": "document_idle"
   }],
   "action": {

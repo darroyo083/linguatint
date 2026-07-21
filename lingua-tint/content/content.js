@@ -1,11 +1,4 @@
-const DEFAULTS = {
-  enabled: true,
-  siteMode: 'notebooklm',
-  germanColor: '#2563eb',
-  spanishColor: '#16a34a',
-  germanEnabled: true,
-  spanishEnabled: true,
-};
+// DEFAULTS loaded from content/defaults.js via manifest.json
 
 let settings = { ...DEFAULTS };
 
@@ -49,9 +42,11 @@ function processTextNode(textNode) {
         language: null,
       });
     }
+    // Use smart detection instead of blindly assuming Spanish
+    var parenLang = detectLanguage(match[0]);
     rawSegments.push({
       text: match[0],
-      language: 'spanish',
+      language: parenLang === 'neutral' ? 'spanish' : parenLang,
     });
     lastIndex = match.index + match[0].length;
   }
@@ -116,111 +111,10 @@ function processTextNode(textNode) {
   parent.setAttribute('data-lingua-processed', 'true');
 }
 
-function wordLevelSegments(text) {
-  var parts = text.match(/\S+\s*/g);
-  if (!parts || parts.length === 0) {
-    return [{ text: text, language: 'neutral' }];
-  }
+// wordLevelSegments, splitSentences, and sentenceLevelSegments
+// are now in language-detector.js (loaded first via manifest.json)
 
-  var wordTokens = parts.filter(function (p) {
-    return /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(p);
-  });
-  if (wordTokens.length === 0) {
-    return [{ text: text, language: 'neutral' }];
-  }
 
-  var tokenLangs = wordTokens.map(function (token, i) {
-    var start = Math.max(0, i - 2);
-    var end = Math.min(wordTokens.length, i + 3);
-    var windowText = wordTokens.slice(start, end).join('');
-    return { text: token, lang: detectLanguage(windowText) };
-  });
-
-  var wordIdx = 0;
-  var partLangs = parts.map(function (part) {
-    if (/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(part)) {
-      var result = tokenLangs[wordIdx];
-      wordIdx++;
-      return { text: part, lang: result.lang };
-    }
-    return { text: part, lang: 'neutral' };
-  });
-
-  var groups = [];
-  var currentLang = partLangs[0]?.lang || 'neutral';
-  var currentText = '';
-
-  for (var i = 0; i < partLangs.length; i++) {
-    if (partLangs[i].lang === currentLang) {
-      currentText += partLangs[i].text;
-    } else {
-      groups.push({ text: currentText, language: currentLang });
-      currentLang = partLangs[i].lang;
-      currentText = partLangs[i].text;
-    }
-  }
-  if (currentText) {
-    groups.push({ text: currentText, language: currentLang });
-  }
-
-  return groups.map(function (g) {
-    var wordCount = g.text.trim().split(/\s+/).length;
-    if (g.language !== 'neutral' && wordCount < 3) {
-      return { text: g.text, language: 'neutral' };
-    }
-    return g;
-  });
-}
-
-function splitSentences(text) {
-  var result = [];
-  var parts = text.match(/[^.!?\n]+[.!?]*(\s+|$)/g);
-  if (!parts || parts.length === 0) {
-    return [text];
-  }
-  for (var i = 0; i < parts.length; i++) {
-    var s = parts[i];
-    if (/^[\s.,;:!?]+$/.test(s.trim())) continue;
-    result.push(s);
-  }
-  return result.length > 0 ? result : [text];
-}
-
-function sentenceLevelSegments(text) {
-  var sentences = splitSentences(text);
-  if (sentences.length <= 1) {
-    return wordLevelSegments(text);
-  }
-
-  var result = [];
-  for (var i = 0; i < sentences.length; i++) {
-    var sentence = sentences[i];
-    if (sentence.trim().length < 3) {
-      result.push({ text: sentence, language: 'neutral' });
-      continue;
-    }
-
-    var scores = scoreLanguage(sentence);
-    var total = scores.german + scores.spanish;
-
-    if (total >= 3) {
-      var ratio = Math.max(scores.german, scores.spanish) / total;
-      var lang = scores.german > scores.spanish ? 'german' : 'spanish';
-
-      if (ratio >= 0.7 && scores[lang] >= 3) {
-        result.push({ text: sentence, language: lang });
-        continue;
-      }
-    }
-
-    var sub = wordLevelSegments(sentence);
-    for (var j = 0; j < sub.length; j++) {
-      result.push(sub[j]);
-    }
-  }
-
-  return result;
-}
 
 function processNode(node) {
   if (!shouldProcess()) return;
@@ -311,6 +205,7 @@ var pendingNodes = [];
 var pendingChars = [];
 var observerTimer = null;
 var observer = null;
+var isFlushing = false;
 
 function flushObserver() {
   observerTimer = null;
@@ -320,45 +215,64 @@ function flushObserver() {
     return;
   }
 
-  for (var i = 0; i < pendingNodes.length; i++) {
-    var node = pendingNodes[i];
-    if (node.nodeType === Node.ELEMENT_NODE && node.getAttribute && node.getAttribute('data-lingua-processed') === 'true') continue;
-    if (node.nodeType === Node.TEXT_NODE && node.parentElement && node.parentElement.getAttribute('data-lingua-processed') === 'true') continue;
-    processNode(node);
-  }
+  // Pause observer while mutating the DOM to prevent feedback loops/freezes
+  if (observer) observer.disconnect();
+  isFlushing = true;
 
-  for (var i = 0; i < pendingChars.length; i++) {
-    var entry = pendingChars[i];
-    var p = entry.parent;
-    if (p && p.getAttribute('data-lingua-processed') === 'true') {
-      p.removeAttribute('data-lingua-processed');
+  try {
+    var nodesToProcess = pendingNodes;
+    var charsToProcess = pendingChars;
+    pendingNodes = [];
+    pendingChars = [];
+
+    for (var i = 0; i < nodesToProcess.length; i++) {
+      var node = nodesToProcess[i];
+      if (!node || !node.parentElement) continue;
+      if (node.nodeType === Node.ELEMENT_NODE && (node.classList.contains('lingua-tint-span') || node.getAttribute('data-lingua-processed') === 'true')) continue;
+      if (node.nodeType === Node.TEXT_NODE && node.parentElement.classList && node.parentElement.classList.contains('lingua-tint-span')) continue;
+      processNode(node);
     }
-    processTextNode(entry.node);
-  }
 
-  pendingNodes = [];
-  pendingChars = [];
+    for (var i = 0; i < charsToProcess.length; i++) {
+      var entry = charsToProcess[i];
+      var p = entry.parent;
+      if (p && p.classList && !p.classList.contains('lingua-tint-span')) {
+        processTextNode(entry.node);
+      }
+    }
+  } finally {
+    isFlushing = false;
+    startObserver();
+  }
 }
 
 function startObserver() {
   if (observer) observer.disconnect();
 
   observer = new MutationObserver(function (mutations) {
+    if (isFlushing) return;
+
     for (var m = 0; m < mutations.length; m++) {
       var mutation = mutations[m];
       for (var n = 0; n < mutation.addedNodes.length; n++) {
-        pendingNodes.push(mutation.addedNodes[n]);
+        var added = mutation.addedNodes[n];
+        if (added.nodeType === Node.ELEMENT_NODE && added.classList && added.classList.contains('lingua-tint-span')) continue;
+        if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.classList && added.parentElement.classList.contains('lingua-tint-span')) continue;
+        pendingNodes.push(added);
       }
       if (mutation.type === 'characterData') {
-        pendingChars.push({
-          node: mutation.target,
-          parent: mutation.target.parentElement,
-        });
+        var p = mutation.target.parentElement;
+        if (p && p.classList && !p.classList.contains('lingua-tint-span')) {
+          pendingChars.push({
+            node: mutation.target,
+            parent: p,
+          });
+        }
       }
     }
 
-    if (!observerTimer) {
-      observerTimer = setTimeout(flushObserver, 30);
+    if (!observerTimer && (pendingNodes.length > 0 || pendingChars.length > 0)) {
+      observerTimer = setTimeout(flushObserver, 50);
     }
   });
 

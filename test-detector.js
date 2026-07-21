@@ -4,11 +4,16 @@
 const fs = require('fs');
 const vm = require('vm');
 
+const dicts = fs.readFileSync(
+  require('path').join(__dirname, 'lingua-tint', 'content', 'dictionaries.js'),
+  'utf-8'
+);
 const code = fs.readFileSync(
   require('path').join(__dirname, 'lingua-tint', 'content', 'language-detector.js'),
   'utf-8'
 );
 
+vm.runInThisContext(dicts);
 vm.runInThisContext(code);
 
 const assert = (label, actual, expected) => {

@@ -1,11 +1,4 @@
-const DEFAULTS = {
-  enabled: true,
-  siteMode: 'notebooklm',
-  germanColor: '#2563eb',
-  spanishColor: '#16a34a',
-  germanEnabled: true,
-  spanishEnabled: true,
-};
+// DEFAULTS loaded from ../content/defaults.js via popup.html script tag
 
 const $ = function (id) {
   return document.getElementById(id);

@@ -2,68 +2,19 @@
 const fs = require('fs');
 const vm = require('vm');
 
+const dicts = fs.readFileSync(
+  require('path').join(__dirname, 'lingua-tint', 'content', 'dictionaries.js'),
+  'utf-8'
+);
 const code = fs.readFileSync(
   require('path').join(__dirname, 'lingua-tint', 'content', 'language-detector.js'),
   'utf-8'
 );
+vm.runInThisContext(dicts);
 vm.runInThisContext(code);
 
-// Inline the wordLevelSegments logic (same algorithm as content.js)
-function wordLevelSegments(text) {
-  var parts = text.match(/\S+\s*/g);
-  if (!parts || parts.length === 0) {
-    return [{ text: text, language: 'neutral' }];
-  }
+// wordLevelSegments is now defined in language-detector.js (loaded above)
 
-  var wordTokens = parts.filter(function (p) {
-    return /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(p);
-  });
-  if (wordTokens.length === 0) {
-    return [{ text: text, language: 'neutral' }];
-  }
-
-  var tokenLangs = wordTokens.map(function (token, i) {
-    var start = Math.max(0, i - 2);
-    var end = Math.min(wordTokens.length, i + 3);
-    var windowText = wordTokens.slice(start, end).join('');
-    return { text: token, lang: detectLanguage(windowText) };
-  });
-
-  var wordIdx = 0;
-  var partLangs = parts.map(function (part) {
-    if (/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/.test(part)) {
-      var result = tokenLangs[wordIdx];
-      wordIdx++;
-      return { text: part, lang: result.lang };
-    }
-    return { text: part, lang: 'neutral' };
-  });
-
-  var groups = [];
-  var currentLang = partLangs[0]?.lang || 'neutral';
-  var currentText = '';
-
-  for (var i = 0; i < partLangs.length; i++) {
-    if (partLangs[i].lang === currentLang) {
-      currentText += partLangs[i].text;
-    } else {
-      groups.push({ text: currentText, language: currentLang });
-      currentLang = partLangs[i].lang;
-      currentText = partLangs[i].text;
-    }
-  }
-  if (currentText) {
-    groups.push({ text: currentText, language: currentLang });
-  }
-
-  return groups.map(function (g) {
-    var wordCount = g.text.trim().split(/\s+/).length;
-    if (g.language !== 'neutral' && wordCount < 3) {
-      return { text: g.text, language: 'neutral' };
-    }
-    return g;
-  });
-}
 
 const assert = (label, segments, expectations) => {
   let pass = true;
@@ -101,6 +52,16 @@ assert('mixed no parens', m1, [
   { text: 'Der Hund ist braun ', language: 'german' },
   { text: 'el perro es marrón', language: 'spanish' }
 ]);
+
+// Test leading space preservation (prevents word joining bug)
+const leadingTestText = '  Der Hund ist braun';
+const leadingSegs = wordLevelSegments(leadingTestText);
+const reconstructed = leadingSegs.map(s => s.text).join('');
+if (reconstructed === leadingTestText) {
+  console.log('  ✅ leading whitespace preserved (no word joining)');
+} else {
+  console.error(`  ❌ leading whitespace lost: expected "${leadingTestText}", got "${reconstructed}"`);
+}
 
 // ProcessTextNode-like simulation: split parens first, then word-level for remaining
 function simulateProcessTextNode(text) {
