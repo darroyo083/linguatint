@@ -7878,12 +7878,12 @@ var SPANISH_WORDS = new Set([
 
 var GERMAN_PATTERNS = [
   /\bsch/, /cht/, /\bge\w{2}/, /ei(t|n|g)/, /ung\b/, /eit/, /\bvor/, /\bnach/, /\bbei/,
-  /\bauf/, /\baus/, /ß/, /ö/, /ä/, /ü/, /tz/, /pf/, /st\b/, /en\b/, /er\b/, /liche/
+  /\bauf/, /\baus/, /tz/, /pf/, /st\b/, /en\b/, /er\b/, /liche/
 ];
 
 var SPANISH_PATTERNS = [
   /\bqu[eé]/, /ión\b/, /dad\b/, /tad\b/, /mente\b/, /ez\b/, /eza\b/, /ista\b/,
-  /\best/, /\bent/, /más\b/, /ñ/, /[éíóú]/, /mient/, /ción/, /cción/, /miento/, /mienta/
+  /\best/, /\bent/, /más\b/, /mient/, /ción/, /cción/, /miento/, /mienta/
 ];
 
 // Fugenlaut connectors for German compound splitting

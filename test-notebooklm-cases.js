@@ -95,6 +95,20 @@ const segs1 = sentenceLevelSegments(line1);
 assert('Bilingual line 1 German segment', segs1[0].language, 'german');
 assert('Bilingual line 1 Spanish segment', segs1[1].language, 'spanish');
 
+// 6. Parenthesized Spanish Translations with German Names (MUST NOT be German)
+const exerciseLine1 = 'Das ist Jörg. Das ist seine (1) Frau, Jasmin. (Este es Jörg. Esta es su mujer, Jasmin). -> Mujer es femenino, añade "-e".';
+const segsEx1 = sentenceLevelSegments(exerciseLine1, exerciseLine1);
+const spanishParen1 = segsEx1.find(s => s.text.includes('(Este es Jörg'));
+assert('Paren translation "(Este es Jörg..." → spanish', spanishParen1 ? spanishParen1.language : '', 'spanish');
+
+const exerciseLine2 = 'Das ist Jasmin. Das ist ihr (1) Mann, Jörg. (Esta es Jasmin. Este es su marido, Jörg). -> Marido es masculino, sin terminación.';
+const segsEx2 = sentenceLevelSegments(exerciseLine2, exerciseLine2);
+const spanishParen2 = segsEx2.find(s => s.text.includes('marido'));
+assert('Paren translation with "marido" → spanish', spanishParen2 ? spanishParen2.language : '', 'spanish');
+
+assert('Standalone word "marido" → spanish', detectLanguage('marido'), 'spanish');
+assert('Phrase "Este es Jörg" → spanish', detectLanguage('Este es Jörg'), 'spanish');
+
 console.log('\n═══ Summary ═══');
 console.log(`  Passed: ${passed}`);
 console.log(`  Failed: ${failed}`);

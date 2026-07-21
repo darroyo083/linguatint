@@ -186,9 +186,24 @@ function wordLevelSegments(text, contextText) {
   }
 
   var tokenLangs = wordTokens.map(function (token, i) {
+    var clean = token.replace(RE_WORD_CLEAN, '');
+    var wordLower = clean.toLowerCase();
+
+    var inGerman = GERMAN_WORDS.has(wordLower);
+    var inSpanish = SPANISH_WORDS.has(wordLower);
+
+    if (inSpanish && !inGerman && !COGNATE_WORDS.has(wordLower)) {
+      return { text: token, lang: 'spanish' };
+    }
+    if (inGerman && !inSpanish && !COGNATE_WORDS.has(wordLower)) {
+      if (clean.length >= 2) {
+        return { text: token, lang: 'german' };
+      }
+    }
+
     var start = Math.max(0, i - 2);
     var end = Math.min(wordTokens.length, i + 3);
-    var windowText = wordTokens.slice(start, end).join('');
+    var windowText = wordTokens.slice(start, end).join(' ');
     return { text: token, lang: detectLanguage(windowText, contextText) };
   });
 
@@ -224,15 +239,29 @@ function wordLevelSegments(text, contextText) {
 
 function splitSentences(text) {
   var result = [];
-  var parts = text.match(/[^.!?\n]+[.!?]*(\s+|$)/g);
-  if (!parts || parts.length === 0) {
-    return [text];
+  var current = '';
+  var parenDepth = 0;
+
+  for (var i = 0; i < text.length; i++) {
+    var char = text[i];
+    if (char === '(') parenDepth++;
+    else if (char === ')' && parenDepth > 0) parenDepth--;
+
+    current += char;
+
+    if (parenDepth === 0 && /[.!?\n]/.test(char)) {
+      if (i === text.length - 1 || /\s/.test(text[i + 1])) {
+        if (current.trim().length > 0) {
+          result.push(current);
+          current = '';
+        }
+      }
+    }
   }
-  for (var i = 0; i < parts.length; i++) {
-    var s = parts[i];
-    if (/^[\s.,;:!?]+$/.test(s.trim())) continue;
-    result.push(s);
+  if (current.trim().length > 0) {
+    result.push(current);
   }
+
   return result.length > 0 ? result : [text];
 }
 
