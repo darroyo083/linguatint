@@ -5,10 +5,42 @@ let settings = { ...DEFAULTS };
 function isSkippedAncestor(el) {
   while (el) {
     const tag = el.tagName && el.tagName.toUpperCase();
-    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE'].includes(tag)) return true;
+    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE', 'MAT-ICON', 'BUTTON'].includes(tag)) return true;
     if (el.isContentEditable) return true;
     if (el.classList && Array.from(el.classList).some(c => c.toLowerCase().includes('code'))) return true;
     el = el.parentElement;
+  }
+  return false;
+}
+
+function isInsideNotebookLMChat(el) {
+  if (!location.hostname.includes('notebooklm.google.com')) return true;
+
+  let current = el;
+  while (current && current.nodeType === Node.ELEMENT_NODE && current !== document.body) {
+    const tag = current.tagName.toUpperCase();
+    if (
+      tag === 'CHAT-PANEL' ||
+      tag === 'CHAT-MESSAGE' ||
+      tag === 'CHAT-MESSAGE-PAIR' ||
+      tag === 'CHAT-PANEL-HEADER'
+    ) {
+      return true;
+    }
+    if (current.classList) {
+      for (let i = 0; i < current.classList.length; i++) {
+        const cls = current.classList[i].toLowerCase();
+        if (
+          cls === 'chat-panel' ||
+          cls === 'chat-panel-content' ||
+          cls.includes('chat-message') ||
+          cls === 'chat-history'
+        ) {
+          return true;
+        }
+      }
+    }
+    current = current.parentElement;
   }
   return false;
 }
@@ -42,6 +74,7 @@ function processTextNode(textNode) {
   if (!parent) return;
   if (parent.classList.contains('lingua-tint-span')) return;
   if (isSkippedAncestor(parent)) return;
+  if (!isInsideNotebookLMChat(parent)) return;
 
   const blockEl = getBlockAncestor(parent);
   const contextText = blockEl ? blockEl.textContent : null;
@@ -136,6 +169,11 @@ function processNode(node) {
   } else if (node.nodeType === Node.ELEMENT_NODE) {
     if (node.classList && node.classList.contains('lingua-tint-span')) return;
     if (isSkippedAncestor(node)) return;
+    if (location.hostname.includes('notebooklm.google.com')) {
+      if (!isInsideNotebookLMChat(node) && !node.querySelector('chat-panel, .chat-panel, .chat-panel-content, chat-message')) {
+        return;
+      }
+    }
 
     node.normalize();
 
@@ -148,6 +186,7 @@ function processNode(node) {
           if (!p) return NodeFilter.FILTER_REJECT;
           if (p.classList && p.classList.contains('lingua-tint-span')) return NodeFilter.FILTER_REJECT;
           if (isSkippedAncestor(p)) return NodeFilter.FILTER_REJECT;
+          if (!isInsideNotebookLMChat(p)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
       }
@@ -178,6 +217,15 @@ function restoreDocument() {
 }
 
 function processDocument() {
+  if (location.hostname.includes('notebooklm.google.com')) {
+    const chatPanels = document.querySelectorAll('chat-panel, .chat-panel, .chat-panel-content, chat-message');
+    if (chatPanels.length > 0) {
+      for (let i = 0; i < chatPanels.length; i++) {
+        processNode(chatPanels[i]);
+      }
+      return;
+    }
+  }
   processNode(document.body);
 }
 
@@ -267,11 +315,20 @@ function startObserver() {
         var added = mutation.addedNodes[n];
         if (added.nodeType === Node.ELEMENT_NODE && added.classList && added.classList.contains('lingua-tint-span')) continue;
         if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.classList && added.parentElement.classList.contains('lingua-tint-span')) continue;
+        if (location.hostname.includes('notebooklm.google.com')) {
+          const parent = added.nodeType === Node.TEXT_NODE ? added.parentElement : added;
+          if (parent && !isInsideNotebookLMChat(parent) && !(added.nodeType === Node.ELEMENT_NODE && added.querySelector && added.querySelector('chat-panel, .chat-panel, .chat-panel-content, chat-message'))) {
+            continue;
+          }
+        }
         pendingNodes.push(added);
       }
       if (mutation.type === 'characterData') {
         var p = mutation.target.parentElement;
         if (p && p.classList && !p.classList.contains('lingua-tint-span')) {
+          if (location.hostname.includes('notebooklm.google.com') && !isInsideNotebookLMChat(p)) {
+            continue;
+          }
           pendingChars.push({
             node: mutation.target,
             parent: p,
