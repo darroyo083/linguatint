@@ -1533,7 +1533,6 @@ var GERMAN_WORDS = new Set([
   'dankst',
   'danst',
   'dant',
-  'de',
   'dee',
   'deen',
   'deie',
@@ -7842,7 +7841,39 @@ var SPANISH_WORDS = new Set([
   'zorro',
   'óptimo',
   'óvalo',
-  'útil'
+  'útil',
+  'ejercicio', 'ejercicios', 'verbo', 'verbos', 'verbal', 'verbales', 'encaja', 'encajan', 'tabla', 'tablas',
+  'pide', 'piden', 'marcar', 'forma', 'formas', 'corresponden', 'corresponde', 'pronombre', 'pronombres',
+  'trampa', 'trampas', 'recuerdas', 'recuerda', 'idénticos', 'identicos', 'idéntico', 'identico', 'domingo',
+  'domingos', 'ordenar', 'frase', 'frases', 'fíjate', 'fijate', 'modal', 'modales', 'posición', 'posicion',
+  'posiciones', 'pregunta', 'preguntas', 'acción', 'accion', 'acciones', 'final', 'finales', 'infinitivo',
+  'infinitivos', 'lamentablemente', 'también', 'tambien', 'oficina', 'oficinas', 'extranjería', 'extranjeria',
+  'burocráticos', 'burocraticos', 'burocrático', 'burocratico', 'estructura', 'estructuras', 'gustaría',
+  'gustaria', 'renovar', 'prolongar', 'permiso', 'permisos', 'residencia', 'tercera', 'tercer', 'tercero',
+  'piso', 'pisos', 'habitación', 'habitacion', 'habitaciones', 'conmigo', 'quedarse', 'queda', 'quedan',
+  'interrogativo', 'interrogativos', 'después', 'despues', 'página', 'pagina', 'páginas', 'paginas',
+  'entrenamiento', 'entrenamientos', 'fantástico', 'fantastico', 'fantástica', 'fantastica', 'dominar',
+  'pinza', 'pasos', 'paso', 'sonar', 'verdaderamente', 'alemán', 'aleman', 'diseñada', 'diseñado',
+  'diseñadas', 'diseñados', 'enseñarte', 'ensenarte', 'posees', 'posee', 'usando', 'reglas', 'regla',
+  'aprendido', 'casos', 'caso', 'nominativo', 'acusativo', 'dativo', 'genitivo', 'teoría', 'teoria',
+  'teorías', 'teorias', 'desglosada', 'desglosado', 'quién', 'quien', 'quienes', 'cosa', 'cosas',
+  'recuadro', 'recuadros', 'superior', 'superiores', 'nada', 'raíz', 'raiz', 'raíces', 'raices',
+  'posesivo', 'posesivos', 'dependiendo', 'dueño', 'dueno', 'dueños', 'duenos', 'pequeño', 'pequeno',
+  'pequeños', 'pequenos', 'pequeña', 'pequena', 'derecha', 'derecho', 'lista', 'listas', 'básica',
+  'basica', 'básico', 'basico', 'yo', 'tú', 'tu', 'él', 'el', 'ello', 'ella', 'ellas', 'ellos',
+  'nosotros', 'nosotras', 'vosotros', 'vosotras', 'vuestro', 'vuestra', 'vuestros', 'vuestras',
+  'usted', 'ustedes', 'siempre', 'mayúscula', 'mayuscula', 'mayúsculas', 'mayusculas', 'oro', 'mejores',
+  'mejor', 'noticias', 'noticia', 'gramaticales', 'gramatical', 'artículo', 'articulo', 'artículos',
+  'articulos', 'terminación', 'terminacion', 'terminaciones', 'palabra', 'palabras', 'ninguna', 'ningun',
+  'ningún', 'nueva', 'nuevas', 'nuevo', 'nuevos', 'declinan', 'declina', 'igual', 'iguales', 'gran',
+  'grandes', 'combinan', 'combina', 'sujeto', 'sujetos', 'masculino', 'masculinos', 'neutro', 'neutros',
+  'femenino', 'femeninos', 'plural', 'plurales', 'añaden', 'anaden', 'añade', 'anade', 'directo',
+  'directos', 'indirecto', 'indirectos', 'demás', 'demas', 'preposiciones', 'preposición', 'preposicion',
+  'ponerle', 'sustantivo', 'sustantivos', 'fijas', 'toca', 'tocan', 'segunda', 'segundo', 'fácil',
+  'facil', 'fáciles', 'faciles', 'pronunciar', 'dice', 'dicen', 'sino', 'tarde', 'tardes', 'llegar',
+  'llegada', 'dormir', 'duerme', 'duermen', 'cocinar', 'cocina', 'juntos', 'juntas', 'junto', 'visitar',
+  'visita', 'amiga', 'amigo', 'amigas', 'amigos', 'marido', 'esposo', 'esposa', 'fútbol', 'futbol',
+  'trámites', 'tramites', 'trámite', 'tramite', 'edificio', 'edificios', 'supones', 'supone', 'suponen'
 ]);
 
 var GERMAN_PATTERNS = [
@@ -7867,5 +7898,5 @@ var RE_GERMAN_CHARS = /[ßöäüÖÄÜ]/;
 var RE_SPANISH_CHARS = /[ñáéíóúÑÁÉÍÓÚ]/;
 var RE_WORD_CLEAN = /[^\wáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/g;
 var RE_CAPITAL_GERMAN = /^[A-ZÄÖÜ][a-zäöüß]/;
-var RE_SPANISH_SUFFIX = /(ción|sión|dad|tad|mente|ez|eza|ista)$/;
+var RE_SPANISH_SUFFIX = /(ción|ciones|sión|siones|dad|dades|tad|tades|mente|ez|eza|ista|istas|al|ales|ar|ares|ivo|ivos|iva|ivas)$/i;
 var RE_ALPHA = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/;

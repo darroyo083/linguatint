@@ -5,4 +5,11 @@ Thumbs.db
 .atl/
 scratch-test.js
 tools/
+.env
+.env.*
+*.tmp
+*.bak
+.vscode/
+.idea/
+
 

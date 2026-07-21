@@ -122,7 +122,9 @@ function scoreLanguageInner(trimmed) {
       }
     }
 
-    if (RE_CAPITAL_GERMAN.test(clean)) german += 1;
+    if (RE_CAPITAL_GERMAN.test(clean) && !inSpanish) {
+      if (inGerman || clean.length >= 4) german += 1;
+    }
     if (RE_SPANISH_SUFFIX.test(wordLower)) spanish += 1;
   }
 
@@ -152,9 +154,9 @@ function detectLanguage(text, contextText) {
   if (contextText && typeof contextText === 'string' && RE_ALPHA.test(text)) {
     var ctxResult = scoreLanguage(contextText);
     var totalCtx = ctxResult.german + ctxResult.spanish;
-    if (totalCtx >= 3) {
+    if (totalCtx >= 5) {
       var ratioCtx = Math.max(ctxResult.german, ctxResult.spanish) / totalCtx;
-      if (ratioCtx >= 0.65) {
+      if (ratioCtx >= 0.75) {
         var dominant = ctxResult.german > ctxResult.spanish ? 'german' : 'spanish';
         if (dominant === 'german' && result.spanish === 0) return 'german';
         if (dominant === 'spanish' && result.german === 0) return 'spanish';
