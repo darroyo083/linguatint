@@ -181,9 +181,38 @@ function wordLevelSegments(text, contextText) {
     return [{ text: text, language: 'neutral' }];
   }
 
+  var GERMAN_ARTICLES = new Set(['der','die','das','den','dem','des','ein','eine','einem','einen','einer','eines','im','am','zum','zur','vom']);
+
   var tokenLangs = wordTokens.map(function (token, i) {
     var clean = token.replace(RE_WORD_CLEAN, '');
     var wordLower = clean.toLowerCase();
+
+    // Rule 1: German Article + Capitalized Noun (e.g. das Auto, das Eis, das Haus, der Mann)
+    if (GERMAN_ARTICLES.has(wordLower) && i + 1 < wordTokens.length) {
+      var nextClean = wordTokens[i + 1].replace(RE_WORD_CLEAN, '');
+      if (/^[A-ZÄÖÜ]/.test(nextClean)) {
+        return { text: token, lang: 'german' };
+      }
+    }
+    if (i > 0 && /^[A-ZÄÖÜ]/.test(clean)) {
+      var prevClean = wordTokens[i - 1].replace(RE_WORD_CLEAN, '').toLowerCase();
+      if (GERMAN_ARTICLES.has(prevClean)) {
+        return { text: token, lang: 'german' };
+      }
+    }
+
+    // Rule 2: German Pronoun Series for homographs like 'es'
+    if (wordLower === 'es') {
+      var localStart = Math.max(0, i - 2);
+      var localEnd = Math.min(wordTokens.length, i + 3);
+      for (var k = localStart; k < localEnd; k++) {
+        if (k === i) continue;
+        var neighbor = wordTokens[k].replace(RE_WORD_CLEAN, '').toLowerCase();
+        if (['ihm','ihn','ihr','ihre','ihren','ihrem','ihrer','ihres','er','sie','wir','du','ich','das','dem'].includes(neighbor)) {
+          return { text: token, lang: 'german' };
+        }
+      }
+    }
 
     var inGerman = GERMAN_WORDS.has(wordLower);
     var inSpanish = SPANISH_WORDS.has(wordLower);

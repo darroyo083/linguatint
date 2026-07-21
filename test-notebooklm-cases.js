@@ -114,6 +114,18 @@ assert('German stem "dies" → german', detectLanguage('dies'), 'german');
 assert('German pronoun "Welches" → german', detectLanguage('Welches'), 'german');
 assert('German pronoun "Dieses" → german', detectLanguage('Dieses'), 'german');
 
+const autoSegs = wordLevelSegments('das Auto = el coche', 'das Auto = el coche');
+const dasAuto = autoSegs.find(s => s.text.includes('das Auto'));
+assert('German article + cognate noun "das Auto" → german', dasAuto ? dasAuto.language : '', 'german');
+
+const eisSegs = wordLevelSegments('das Eis = el helado', 'das Eis = el helado');
+const dasEis = eisSegs.find(s => s.text.includes('das Eis'));
+assert('German article + short noun "das Eis" → german', dasEis ? dasEis.language : '', 'german');
+
+const esSegs = wordLevelSegments('Pronombres: es / es / ihm', 'Neutros (das) ➔ Pronombres: es / es / ihm');
+const esSeg = esSegs.find(s => s.text.includes('es') && s.language === 'german');
+assert('German pronoun homograph in pronoun series "es / es / ihm" → german', esSeg ? esSeg.language : '', 'german');
+
 const headingLine = 'Ejercicio 2 (Página 51): La familia Schmitz';
 const segsHeading = sentenceLevelSegments(headingLine);
 const familiaSeg = segsHeading.find(s => s.text.includes('familia'));
