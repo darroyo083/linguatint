@@ -126,6 +126,7 @@ function scoreLanguageInner(trimmed) {
       if (inGerman || clean.length >= 4) german += 1;
     }
     if (RE_SPANISH_SUFFIX.test(wordLower)) spanish += 1;
+    if (RE_GERMAN_SUFFIX.test(wordLower)) german += 1;
   }
 
   // FIX: Apply patterns against the FULL text, not the last word's `lower`

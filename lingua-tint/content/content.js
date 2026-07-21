@@ -200,6 +200,50 @@ function processNode(node) {
     for (const tn of textNodes) {
       processTextNode(tn);
     }
+
+    stitchSuffixSpans(node);
+  }
+}
+
+function stitchSuffixSpans(container) {
+  const root = container || document.body;
+  if (!root) return;
+  const spans = root.querySelectorAll('.lingua-tint-span');
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i];
+    const lang = span.getAttribute('data-lingua-lang');
+    if (!lang || lang === 'neutral') continue;
+
+    let targetTextNode = null;
+    let curr = span;
+
+    if (curr.nextSibling && curr.nextSibling.nodeType === Node.TEXT_NODE) {
+      targetTextNode = curr.nextSibling;
+    } else {
+      let parent = curr.parentElement;
+      while (parent && parent !== root && parent !== document.body && ['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK'].includes(parent.tagName)) {
+        if (parent.nextSibling && parent.nextSibling.nodeType === Node.TEXT_NODE) {
+          targetTextNode = parent.nextSibling;
+          break;
+        }
+        if (parent.nextSibling) break;
+        parent = parent.parentElement;
+      }
+    }
+
+    if (!targetTextNode) continue;
+
+    const text = targetTextNode.textContent;
+    if (/^\s/.test(text)) continue;
+
+    const match = text.match(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]+/);
+    if (!match) continue;
+
+    const suffix = match[0];
+    if (suffix.length > 4) continue;
+
+    span.textContent += suffix;
+    targetTextNode.textContent = text.slice(suffix.length);
   }
 }
 
@@ -223,10 +267,12 @@ function processDocument() {
       for (let i = 0; i < chatPanels.length; i++) {
         processNode(chatPanels[i]);
       }
+      stitchSuffixSpans(document.body);
       return;
     }
   }
   processNode(document.body);
+  stitchSuffixSpans(document.body);
 }
 
 function isCosmetic(key) {
@@ -297,6 +343,8 @@ function flushObserver() {
         processTextNode(entry.node);
       }
     }
+
+    stitchSuffixSpans(document.body);
   } finally {
     isFlushing = false;
     startObserver();

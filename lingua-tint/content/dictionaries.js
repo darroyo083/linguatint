@@ -7873,7 +7873,12 @@ var SPANISH_WORDS = new Set([
   'facil', 'fáciles', 'faciles', 'pronunciar', 'dice', 'dicen', 'sino', 'tarde', 'tardes', 'llegar',
   'llegada', 'dormir', 'duerme', 'duermen', 'cocinar', 'cocina', 'juntos', 'juntas', 'junto', 'visitar',
   'visita', 'amiga', 'amigo', 'amigas', 'amigos', 'marido', 'esposo', 'esposa', 'fútbol', 'futbol',
-  'trámites', 'tramites', 'trámite', 'tramite', 'edificio', 'edificios', 'supones', 'supone', 'suponen'
+  'trámites', 'tramites', 'trámite', 'tramite', 'edificio', 'edificios', 'supones', 'supone', 'suponen',
+  'familia', 'familias', 'familiar', 'familiares', 'capítulo', 'capitulo', 'capítulos', 'capitulos', 'sección', 'seccion', 'secciones',
+  'vocabulario', 'vocabularios', 'ejemplo', 'ejemplos', 'cuadro', 'cuadros', 'esquema', 'esquemas', 'resumen', 'resúmenes', 'resumenes',
+  'oración', 'oracion', 'oraciones', 'párrafo', 'parrafo', 'párrafos', 'parrafos', 'significado', 'significados',
+  'género', 'genero', 'géneros', 'generos', 'adjetivo', 'adjetivos', 'adverbio', 'adverbios', 'traducción', 'traduccion', 'traducciones',
+  'excepción', 'excepcion', 'excepciones', 'expresión', 'expresion', 'expresiones', 'singular', 'plural'
 ]);
 
 var GERMAN_PATTERNS = [
@@ -7898,5 +7903,6 @@ var RE_GERMAN_CHARS = /[ßöäüÖÄÜ]/;
 var RE_SPANISH_CHARS = /[ñáéíóúÑÁÉÍÓÚ]/;
 var RE_WORD_CLEAN = /[^\wáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/g;
 var RE_CAPITAL_GERMAN = /^[A-ZÄÖÜ][a-zäöüß]/;
-var RE_SPANISH_SUFFIX = /(ción|ciones|sión|siones|dad|dades|tad|tades|mente|ez|eza|ista|istas|al|ales|ar|ares|ivo|ivos|iva|ivas)$/i;
+var RE_SPANISH_SUFFIX = /(ción|ciones|sión|siones|dad|dades|tad|tades|mente|ez|eza|ista|istas|al|ales|ar|ares|ivo|ivos|iva|ivas|miento|mientos|amiento|amientos|imiento|imientos)$/i;
+var RE_GERMAN_SUFFIX = /(ung|ungen|keit|keiten|heit|heiten|schaft|schaften|lich|liche|lichen|licher|liches|isch|ische|ischen|ischer|isches|bar|bare|baren|barer|bares|sam|same|samen)$/i;
 var RE_ALPHA = /[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]/;

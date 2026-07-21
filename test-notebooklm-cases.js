@@ -108,6 +108,12 @@ assert('Paren translation with "marido" → spanish', spanishParen2 ? spanishPar
 
 assert('Standalone word "marido" → spanish', detectLanguage('marido'), 'spanish');
 assert('Phrase "Este es Jörg" → spanish', detectLanguage('Este es Jörg'), 'spanish');
+assert('Spanish word "familia" → spanish', detectLanguage('familia'), 'spanish');
+
+const headingLine = 'Ejercicio 2 (Página 51): La familia Schmitz';
+const segsHeading = sentenceLevelSegments(headingLine);
+const familiaSeg = segsHeading.find(s => s.text.includes('familia'));
+assert('Heading "La familia Schmitz" segment with familia → spanish', familiaSeg ? familiaSeg.language : '', 'spanish');
 
 console.log('\n═══ Summary ═══');
 console.log(`  Passed: ${passed}`);
