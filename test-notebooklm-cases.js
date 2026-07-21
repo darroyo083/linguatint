@@ -109,6 +109,10 @@ assert('Paren translation with "marido" → spanish', spanishParen2 ? spanishPar
 assert('Standalone word "marido" → spanish', detectLanguage('marido'), 'spanish');
 assert('Phrase "Este es Jörg" → spanish', detectLanguage('Este es Jörg'), 'spanish');
 assert('Spanish word "familia" → spanish', detectLanguage('familia'), 'spanish');
+assert('German stem "welch" → german', detectLanguage('welch'), 'german');
+assert('German stem "dies" → german', detectLanguage('dies'), 'german');
+assert('German pronoun "Welches" → german', detectLanguage('Welches'), 'german');
+assert('German pronoun "Dieses" → german', detectLanguage('Dieses'), 'german');
 
 const headingLine = 'Ejercicio 2 (Página 51): La familia Schmitz';
 const segsHeading = sentenceLevelSegments(headingLine);

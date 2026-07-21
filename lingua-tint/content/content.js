@@ -208,50 +208,84 @@ function processNode(node) {
 function stitchSuffixSpans(container) {
   const root = container || document.body;
   if (!root) return;
+
   const spans = root.querySelectorAll('.lingua-tint-span');
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i];
     const lang = span.getAttribute('data-lingua-lang');
     if (!lang || lang === 'neutral') continue;
 
-    let targetTextNode = null;
-    let curr = span;
+    const color = span.style.color;
 
-    if (curr.nextSibling && curr.nextSibling.nodeType === Node.TEXT_NODE) {
-      targetTextNode = curr.nextSibling;
-    } else {
-      let parent = curr.parentElement;
-      while (parent && parent !== root && parent !== document.body && ['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK'].includes(parent.tagName)) {
-        if (parent.nextSibling && parent.nextSibling.nodeType === Node.TEXT_NODE) {
-          targetTextNode = parent.nextSibling;
-          break;
-        }
-        if (parent.nextSibling) break;
-        parent = parent.parentElement;
+    let outer = span;
+    while (
+      outer.parentElement &&
+      outer.parentElement !== root &&
+      outer.parentElement !== document.body &&
+      ['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK', 'SMALL'].includes(outer.parentElement.tagName) &&
+      !outer.parentElement.classList.contains('lingua-tint-span')
+    ) {
+      if (outer.parentElement.nextSibling) {
+        outer = outer.parentElement;
+        break;
       }
+      outer = outer.parentElement;
     }
 
-    if (!targetTextNode) continue;
+    let next = outer.nextSibling;
+    while (next) {
+      if (next.nodeType === 8 || next.nodeType === 7) {
+        next = next.nextSibling;
+        continue;
+      }
+      if (next.nodeType === Node.TEXT_NODE) {
+        const text = next.textContent;
+        if (/^\s/.test(text)) break;
 
-    const text = targetTextNode.textContent;
-    if (/^\s/.test(text)) continue;
+        const match = text.match(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]+/);
+        if (!match) break;
 
-    const match = text.match(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]+/);
-    if (!match) continue;
+        const suffix = match[0];
+        if (suffix.length > 5) break;
 
-    const suffix = match[0];
-    if (suffix.length > 4) continue;
+        span.textContent += suffix;
+        next.textContent = text.slice(suffix.length);
+        break;
+      } else if (next.nodeType === Node.ELEMENT_NODE) {
+        const tag = next.tagName ? next.tagName.toUpperCase() : '';
+        if (!['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK', 'SMALL', 'SUB', 'SUP'].includes(tag)) break;
+        if (next.classList && next.classList.contains('lingua-tint-span')) break;
 
-    span.textContent += suffix;
-    targetTextNode.textContent = text.slice(suffix.length);
+        const elText = next.textContent;
+        if (/^\s/.test(elText) || /\s$/.test(elText.trim())) break;
+
+        const trimmed = elText.trim();
+        if (trimmed.length === 0 || trimmed.length > 5) break;
+        if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]+$/.test(trimmed)) break;
+
+        next.classList.add('lingua-tint-span');
+        next.setAttribute('data-lingua-lang', lang);
+        next.style.color = color;
+
+        next = next.nextSibling;
+      } else {
+        break;
+      }
+    }
   }
 }
 
 function restoreDocument() {
   const spans = document.querySelectorAll('.lingua-tint-span');
   for (const span of spans) {
-    const text = document.createTextNode(span.textContent);
-    span.parentNode.replaceChild(text, span);
+    span.style.color = '';
+    span.removeAttribute('data-lingua-lang');
+    if (span.tagName === 'SPAN' && !span.className.replace('lingua-tint-span', '').trim()) {
+      const text = document.createTextNode(span.textContent);
+      if (span.parentNode) span.parentNode.replaceChild(text, span);
+    } else {
+      span.classList.remove('lingua-tint-span');
+    }
   }
 
   const processed = document.querySelectorAll('[data-lingua-processed]');
