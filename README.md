@@ -8,13 +8,13 @@ Created to highlight mixed German and Spanish text in NotebookLM and across the 
 
 ## How it works
 
-Three-level detection:
+Three-level detection with NotebookLM chat scoping:
 
-1. **Smart parentheses**: text inside `(...)` is scored; defaults to Spanish only if ambiguous.
-2. **Sentence-level**: split by `. ! ? \n`, detect dominant language with `scoreLanguage()`. If a sentence is clearly one language (ratio >= 0.7), it is colored as a whole.
-3. **Word-level**: centered 5-word window using exclusive characters (ß, ñ, ö, ü, é, í...), 800+ word dictionary per language, capital letter (German noun), suffixes (-ción, -dad, -mente) and character patterns (sch, cht, ung; que, ión, miento, cción).
+1. **Smart parentheses**: text inside `(...)` is scored as a single unit; defaults to Spanish only if ambiguous.
+2. **Sentence-level**: split by `. ! ? \n` (preserving parens), detect dominant language with `scoreLanguage()`. If a sentence is clearly one language (ratio >= 0.7), it is colored as a whole.
+3. **Word-level & DOM Stitching**: 5-word window scoring with 800+ dictionaries, capital letters (German nouns), German suffixes (-ung, -keit, -heit, -schaft, -lich, -isch, -bar) and Spanish suffixes (-ción, -dad, -mente, -miento). Suffixes split by inline formatting tags (`<b>Mein</b>e`) are automatically stitched.
 
-Glued words like `einemKind` are split automatically (including Fugenlaut: *Arbeitstag*, *Kinderspielplatz*). Cognate words (*hotel*, *computer*, *park*) are excluded from scoring to avoid false positives.
+Glued German words like `einemKind` are split automatically (including Fugenlaut: *Arbeitstag*, *Kinderspielplatz*). Cognate words (*hotel*, *computer*, *park*) are excluded from scoring to avoid false positives. In NotebookLM, detection is strictly scoped to the chat panel area (`chat-panel`).
 
 ## Usage
 
@@ -47,10 +47,11 @@ node test-detector.js          # 50 detection tests
 node test-wordlevel.js         # 6 segmentation tests
 node test-improvements.js      # 61 improvement tests (cognates, parens, compounds, B1+)
 node test-html-inline.js        # 7 inline formatting & context tests
-node test-notebooklm-cases.js  # 27 real NotebookLM screenshot tests
+node test-notebooklm-cases.js  # 33 real NotebookLM screenshot tests
 ```
 
 ## License
 
 MIT
+
 

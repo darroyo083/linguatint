@@ -1,11 +1,9 @@
 function trySplitCompound(word) {
   var lower = word.toLowerCase();
-  // Try direct split first, then with Fugenlaut removal
   for (var split = 3; split < lower.length; split++) {
     var left = lower.slice(0, split);
     var rightRest = lower.slice(split);
 
-    // Candidates: direct split + Fugenlaut variants
     var candidates = [{ right: rightRest, fugen: '' }];
     for (var f = 0; f < FUGENLAUTE.length; f++) {
       var fl = FUGENLAUTE[f];
@@ -28,19 +26,16 @@ function trySplitCompound(word) {
 
       var gLeft = GERMAN_WORDS.has(left);
       var gRight = GERMAN_WORDS.has(right);
-      var sLeft = SPANISH_WORDS.has(left);
-      var sRight = SPANISH_WORDS.has(right);
 
-      if ((gLeft || sLeft) && (gRight || sRight)) {
-        var result = { german: 0, spanish: 0 };
-        if (gLeft) result.german += 2;
-        if (sLeft) result.spanish += 2;
-        if (gRight) result.german += 2;
-        if (sRight) result.spanish += 2;
+      if (gLeft && gRight) {
+        var result = { german: 4, spanish: 0 };
         if (rightIsCap) result.german += 1;
-        if (candidates[c].fugen !== '') result.german += 2; // Fugenlaut is German-specific
+        if (candidates[c].fugen !== '') result.german += 2;
         if (left.length === 4 && /^[A-Z]/.test(word[0])) result.german += 1;
         return result;
+      }
+      if (candidates[c].fugen !== '' && (gLeft || gRight)) {
+        return { german: 4, spanish: 0 };
       }
     }
   }

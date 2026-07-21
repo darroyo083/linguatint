@@ -5,9 +5,9 @@ let settings = { ...DEFAULTS };
 function isSkippedAncestor(el) {
   while (el) {
     const tag = el.tagName && el.tagName.toUpperCase();
-    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE', 'MAT-ICON', 'BUTTON'].includes(tag)) return true;
+    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE', 'MAT-ICON', 'BUTTON', 'SVG', 'MATH'].includes(tag)) return true;
     if (el.isContentEditable) return true;
-    if (el.classList && Array.from(el.classList).some(c => c.toLowerCase().includes('code'))) return true;
+    if (el.classList && Array.from(el.classList).some(c => c.toLowerCase().includes('code') || c.toLowerCase().includes('katex'))) return true;
     el = el.parentElement;
   }
   return false;
