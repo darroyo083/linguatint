@@ -16,8 +16,11 @@ const code = fs.readFileSync(
 vm.runInThisContext(dicts);
 vm.runInThisContext(code);
 
+let failures = 0;
+
 const assert = (label, actual, expected) => {
   const pass = actual === expected;
+  if (!pass) failures++;
   console[pass ? 'log' : 'error'](
     (pass ? '  ✅' : '  ❌') + ' ' + label +
     ' → ' + (pass ? actual : `expected "${expected}", got "${actual}"`)
@@ -128,3 +131,4 @@ assert('miento → spanish', detectLanguage('el sentimiento'), 'spanish');
 assert('cción → spanish', detectLanguage('la lección'), 'spanish');
 
 console.log('\n---');
+if (failures > 0) process.exitCode = 1;

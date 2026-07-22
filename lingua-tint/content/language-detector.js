@@ -283,7 +283,7 @@ function splitSentences(text) {
       }
     }
   }
-  if (current.trim().length > 0) {
+  if (current.length > 0) {
     result.push(current);
   }
 
@@ -348,4 +348,3 @@ function detectLanguageAsync(text) {
     }
   });
 }
-

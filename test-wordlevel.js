@@ -13,12 +13,15 @@ const code = fs.readFileSync(
 vm.runInThisContext(dicts);
 vm.runInThisContext(code);
 
+let failures = 0;
+
 // wordLevelSegments is now defined in language-detector.js (loaded above)
 
 
 const assert = (label, segments, expectations) => {
   let pass = true;
   if (segments.length !== expectations.length) {
+    failures++;
     console.error(`  ❌ ${label}: expected ${expectations.length} segments, got ${segments.length}`);
     return;
   }
@@ -29,6 +32,7 @@ const assert = (label, segments, expectations) => {
       console.error(`  ❌ ${label}: segment ${i}: expected "${expectations[i].language}:${expectations[i].text.trim()}", got "${segments[i].language}:${segments[i].text.trim()}"`);
     }
   }
+  if (!pass) failures++;
   if (pass) console.log(`  ✅ ${label}`);
 };
 
@@ -60,6 +64,7 @@ const reconstructed = leadingSegs.map(s => s.text).join('');
 if (reconstructed === leadingTestText) {
   console.log('  ✅ leading whitespace preserved (no word joining)');
 } else {
+  failures++;
   console.error(`  ❌ leading whitespace lost: expected "${leadingTestText}", got "${reconstructed}"`);
 }
 
@@ -110,4 +115,15 @@ assert('all neutral', n1, [
   { text: 'Hello World 123', language: 'neutral' }
 ]);
 
+const trailingTestText = 'Der Hund.  El perro.   ';
+const trailingSegments = sentenceLevelSegments(trailingTestText);
+const trailingReconstructed = trailingSegments.map(s => s.text).join('');
+if (trailingReconstructed === trailingTestText) {
+  console.log('  ✅ trailing whitespace preserved');
+} else {
+  failures++;
+  console.error(`  ❌ trailing whitespace lost: expected "${trailingTestText}", got "${trailingReconstructed}"`);
+}
+
 console.log('\n---');
+if (failures > 0) process.exitCode = 1;

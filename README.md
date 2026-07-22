@@ -12,7 +12,7 @@ Three-level detection with NotebookLM chat scoping:
 
 1. **Smart parentheses**: text inside `(...)` is scored as a single unit; defaults to Spanish only if ambiguous.
 2. **Sentence-level**: split by `. ! ? \n` (preserving parens), detect dominant language with `scoreLanguage()`. If a sentence is clearly one language (ratio >= 0.7), it is colored as a whole.
-3. **Word-level & DOM Stitching**: 5-word window scoring with 800+ dictionaries, capital letters (German nouns), German suffixes (-ung, -keit, -heit, -schaft, -lich, -isch, -bar) and Spanish suffixes (-ción, -dad, -mente, -miento). Suffixes split by inline formatting tags (`<b>Mein</b>e`) are automatically stitched.
+3. **Word-level & DOM Stitching**: 5-word window scoring with word dictionaries, capital letters (German nouns), German suffixes (-ung, -keit, -heit, -schaft, -lich, -isch, -bar) and Spanish suffixes (-ción, -dad, -mente, -miento). Suffixes split by inline formatting tags (`<b>Mein</b>e`) are automatically stitched without moving text between formatting elements.
 
 Glued German words like `einemKind` are split automatically (including Fugenlaut: *Arbeitstag*, *Kinderspielplatz*). Cognate words (*hotel*, *computer*, *park*) are excluded from scoring to avoid false positives. In NotebookLM, detection is strictly scoped to the chat panel area (`chat-panel`).
 
@@ -36,6 +36,7 @@ lingua-tint/
 │   └── popup.css
 └── content/
     ├── defaults.js          <- shared settings defaults
+    ├── dictionaries.js      <- German/Spanish word sets and patterns
     ├── content.js           <- DOM, observer, processing pipeline
     └── language-detector.js <- pure detection, no DOM
 ```
@@ -43,11 +44,11 @@ lingua-tint/
 ## Tests
 
 ```sh
-node test-detector.js          # 50 detection tests
-node test-wordlevel.js         # 6 segmentation tests
+node test-detector.js          # core detection tests
+node test-wordlevel.js         # segmentation and whitespace tests
 node test-improvements.js      # 61 improvement tests (cognates, parens, compounds, B1+)
 node test-html-inline.js        # 7 inline formatting & context tests
-node test-notebooklm-cases.js  # 33 real NotebookLM screenshot tests
+node test-notebooklm-cases.js  # real NotebookLM screenshot tests
 ```
 
 ## License

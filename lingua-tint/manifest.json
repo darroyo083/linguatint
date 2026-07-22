@@ -3,14 +3,9 @@
   "name": "LinguaTint",
   "version": "1.0.0",
   "description": "Colorea automáticamente cada idioma en textos bilingües. Ideal para aprender idiomas en NotebookLM.",
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": [
-    "https://notebooklm.google.com/*",
-    "file:///*",
-    "<all_urls>"
-  ],
+  "permissions": ["storage"],
   "content_scripts": [{
-    "matches": ["https://notebooklm.google.com/*", "file:///*", "<all_urls>"],
+    "matches": ["<all_urls>"],
     "js": ["content/defaults.js", "content/dictionaries.js", "content/language-detector.js", "content/content.js"],
     "run_at": "document_idle"
   }],

@@ -2,19 +2,27 @@
 
 let settings = { ...DEFAULTS };
 
+const NOTEBOOKLM_HOST = 'notebooklm.google.com';
+const NOTEBOOKLM_SELECTOR = 'chat-panel, chat-message, chat-message-pair, chat-panel-header, .chat-panel, .chat-panel-content, .chat-message, .chat-history';
+const OWNED_SELECTOR = '[data-lingua-tint-owned="true"]';
+
+function isNotebookLM() {
+  return location.hostname === NOTEBOOKLM_HOST;
+}
+
 function isSkippedAncestor(el) {
   while (el) {
     const tag = el.tagName && el.tagName.toUpperCase();
     if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE', 'MAT-ICON', 'BUTTON', 'SVG', 'MATH'].includes(tag)) return true;
     if (el.isContentEditable) return true;
-    if (el.classList && Array.from(el.classList).some(c => c.toLowerCase().includes('code') || c.toLowerCase().includes('katex'))) return true;
+    if (el.classList && Array.from(el.classList).some(c => /(^|[-_])(code|katex)([-_]|$)/i.test(c))) return true;
     el = el.parentElement;
   }
   return false;
 }
 
 function isInsideNotebookLMChat(el) {
-  if (!location.hostname.includes('notebooklm.google.com')) return true;
+  if (!isNotebookLM()) return true;
 
   let current = el;
   while (current && current.nodeType === Node.ELEMENT_NODE && current !== document.body) {
@@ -47,7 +55,7 @@ function isInsideNotebookLMChat(el) {
 
 function shouldProcess() {
   if (!settings.enabled) return false;
-  if (settings.siteMode === 'notebooklm' && !location.hostname.includes('notebooklm.google.com')) return false;
+  if (settings.siteMode === 'notebooklm' && !isNotebookLM()) return false;
   return true;
 }
 
@@ -72,7 +80,7 @@ function processTextNode(textNode) {
 
   const parent = textNode.parentElement;
   if (!parent) return;
-  if (parent.classList.contains('lingua-tint-span')) return;
+  if (parent.matches(OWNED_SELECTOR)) return;
   if (isSkippedAncestor(parent)) return;
   if (!isInsideNotebookLMChat(parent)) return;
 
@@ -148,6 +156,7 @@ function processTextNode(textNode) {
     } else {
       var span = document.createElement('span');
       span.className = 'lingua-tint-span';
+      span.setAttribute('data-lingua-tint-owned', 'true');
       span.setAttribute('data-lingua-lang', seg.language);
       span.style.color = seg.language === 'german' ? settings.germanColor : settings.spanishColor;
       span.textContent = seg.text;
@@ -167,10 +176,10 @@ function processNode(node) {
   if (node.nodeType === Node.TEXT_NODE) {
     processTextNode(node);
   } else if (node.nodeType === Node.ELEMENT_NODE) {
-    if (node.classList && node.classList.contains('lingua-tint-span')) return;
+    if (node.matches && node.matches(OWNED_SELECTOR)) return;
     if (isSkippedAncestor(node)) return;
-    if (location.hostname.includes('notebooklm.google.com')) {
-      if (!isInsideNotebookLMChat(node) && !node.querySelector('chat-panel, .chat-panel, .chat-panel-content, chat-message')) {
+    if (isNotebookLM()) {
+      if (!isInsideNotebookLMChat(node) && !node.querySelector(NOTEBOOKLM_SELECTOR)) {
         return;
       }
     }
@@ -184,7 +193,7 @@ function processNode(node) {
         acceptNode: function (n) {
           const p = n.parentElement;
           if (!p) return NodeFilter.FILTER_REJECT;
-          if (p.classList && p.classList.contains('lingua-tint-span')) return NodeFilter.FILTER_REJECT;
+          if (p.matches && p.matches(OWNED_SELECTOR)) return NodeFilter.FILTER_REJECT;
           if (isSkippedAncestor(p)) return NodeFilter.FILTER_REJECT;
           if (!isInsideNotebookLMChat(p)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
@@ -209,7 +218,7 @@ function stitchSuffixSpans(container) {
   const root = container || document.body;
   if (!root) return;
 
-  const spans = root.querySelectorAll('.lingua-tint-span');
+  const spans = root.querySelectorAll(OWNED_SELECTOR + '[data-lingua-lang]');
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i];
     const lang = span.getAttribute('data-lingua-lang');
@@ -223,7 +232,7 @@ function stitchSuffixSpans(container) {
       outer.parentElement !== root &&
       outer.parentElement !== document.body &&
       ['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK', 'SMALL'].includes(outer.parentElement.tagName) &&
-      !outer.parentElement.classList.contains('lingua-tint-span')
+      !outer.parentElement.matches(OWNED_SELECTOR)
     ) {
       if (outer.parentElement.nextSibling) {
         outer = outer.parentElement;
@@ -248,13 +257,19 @@ function stitchSuffixSpans(container) {
         const suffix = match[0];
         if (suffix.length > 5) break;
 
-        span.textContent += suffix;
+        const suffixSpan = document.createElement('span');
+        suffixSpan.className = 'lingua-tint-span';
+        suffixSpan.setAttribute('data-lingua-tint-owned', 'true');
+        suffixSpan.setAttribute('data-lingua-lang', lang);
+        suffixSpan.style.color = color;
+        suffixSpan.textContent = suffix;
+        next.parentNode.insertBefore(suffixSpan, next);
         next.textContent = text.slice(suffix.length);
         break;
       } else if (next.nodeType === Node.ELEMENT_NODE) {
         const tag = next.tagName ? next.tagName.toUpperCase() : '';
         if (!['B', 'I', 'STRONG', 'EM', 'SPAN', 'MARK', 'SMALL', 'SUB', 'SUP'].includes(tag)) break;
-        if (next.classList && next.classList.contains('lingua-tint-span')) break;
+        if (next.matches && next.matches(OWNED_SELECTOR)) break;
 
         const elText = next.textContent;
         if (/^\s/.test(elText) || /\s$/.test(elText.trim())) break;
@@ -263,10 +278,19 @@ function stitchSuffixSpans(container) {
         if (trimmed.length === 0 || trimmed.length > 5) break;
         if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑäöüßÄÖÜ]+$/.test(trimmed)) break;
 
-        next.classList.add('lingua-tint-span');
-        next.setAttribute('data-lingua-lang', lang);
-        next.style.color = color;
-
+        const textNodes = [];
+        const walker = document.createTreeWalker(next, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        for (let j = 0; j < textNodes.length; j++) {
+          const textNode = textNodes[j];
+          const wrapper = document.createElement('span');
+          wrapper.className = 'lingua-tint-span';
+          wrapper.setAttribute('data-lingua-tint-owned', 'true');
+          wrapper.setAttribute('data-lingua-lang', lang);
+          wrapper.style.color = color;
+          wrapper.textContent = textNode.textContent;
+          textNode.parentNode.replaceChild(wrapper, textNode);
+        }
         next = next.nextSibling;
       } else {
         break;
@@ -276,16 +300,13 @@ function stitchSuffixSpans(container) {
 }
 
 function restoreDocument() {
-  const spans = document.querySelectorAll('.lingua-tint-span');
+  const spans = document.querySelectorAll(OWNED_SELECTOR);
   for (const span of spans) {
-    span.style.color = '';
-    span.removeAttribute('data-lingua-lang');
-    if (span.tagName === 'SPAN' && !span.className.replace('lingua-tint-span', '').trim()) {
-      const text = document.createTextNode(span.textContent);
-      if (span.parentNode) span.parentNode.replaceChild(text, span);
-    } else {
-      span.classList.remove('lingua-tint-span');
-    }
+    const parent = span.parentNode;
+    if (!parent) continue;
+    while (span.firstChild) parent.insertBefore(span.firstChild, span);
+    parent.removeChild(span);
+    parent.normalize();
   }
 
   const processed = document.querySelectorAll('[data-lingua-processed]');
@@ -295,8 +316,8 @@ function restoreDocument() {
 }
 
 function processDocument() {
-  if (location.hostname.includes('notebooklm.google.com')) {
-    const chatPanels = document.querySelectorAll('chat-panel, .chat-panel, .chat-panel-content, chat-message');
+  if (isNotebookLM()) {
+    const chatPanels = document.querySelectorAll(NOTEBOOKLM_SELECTOR);
     if (chatPanels.length > 0) {
       for (let i = 0; i < chatPanels.length; i++) {
         processNode(chatPanels[i]);
@@ -314,7 +335,7 @@ function isCosmetic(key) {
 }
 
 function updateColors() {
-  var spans = document.querySelectorAll('.lingua-tint-span');
+  var spans = document.querySelectorAll(OWNED_SELECTOR + '[data-lingua-lang]');
   for (var i = 0; i < spans.length; i++) {
     var span = spans[i];
     var lang = span.getAttribute('data-lingua-lang');
@@ -325,21 +346,25 @@ function updateColors() {
 
 function applySettings(changedKeys) {
   if (!shouldProcess()) {
+    stopObserver();
     restoreDocument();
     return;
   }
 
   if (changedKeys && changedKeys.length > 0 && changedKeys.every(isCosmetic)) {
     updateColors();
+    startObserver();
     return;
   }
 
+  stopObserver();
   restoreDocument();
   processDocument();
+  startObserver();
 }
 
-var pendingNodes = [];
-var pendingChars = [];
+var pendingNodes = new Set();
+var pendingChars = new Set();
 var observerTimer = null;
 var observer = null;
 var isFlushing = false;
@@ -347,8 +372,8 @@ var isFlushing = false;
 function flushObserver() {
   observerTimer = null;
   if (!shouldProcess()) {
-    pendingNodes = [];
-    pendingChars = [];
+    pendingNodes.clear();
+    pendingChars.clear();
     return;
   }
 
@@ -357,28 +382,31 @@ function flushObserver() {
   isFlushing = true;
 
   try {
-    var nodesToProcess = pendingNodes;
-    var charsToProcess = pendingChars;
-    pendingNodes = [];
-    pendingChars = [];
+    var nodesToProcess = Array.from(pendingNodes);
+    var charsToProcess = Array.from(pendingChars);
+    pendingNodes.clear();
+    pendingChars.clear();
 
     for (var i = 0; i < nodesToProcess.length; i++) {
       var node = nodesToProcess[i];
       if (!node || !node.parentElement) continue;
-      if (node.nodeType === Node.ELEMENT_NODE && (node.classList.contains('lingua-tint-span') || node.getAttribute('data-lingua-processed') === 'true')) continue;
-      if (node.nodeType === Node.TEXT_NODE && node.parentElement.classList && node.parentElement.classList.contains('lingua-tint-span')) continue;
+      if (node.nodeType === Node.ELEMENT_NODE && node.matches(OWNED_SELECTOR)) continue;
+      if (node.nodeType === Node.TEXT_NODE && node.parentElement.matches(OWNED_SELECTOR)) continue;
       processNode(node);
     }
 
     for (var i = 0; i < charsToProcess.length; i++) {
-      var entry = charsToProcess[i];
-      var p = entry.parent;
-      if (p && p.classList && !p.classList.contains('lingua-tint-span')) {
-        processTextNode(entry.node);
+      var textNode = charsToProcess[i];
+      var p = textNode.parentElement;
+      if (p && !p.matches(OWNED_SELECTOR)) {
+        processTextNode(textNode);
       }
     }
 
-    stitchSuffixSpans(document.body);
+    for (var i = 0; i < nodesToProcess.length; i++) {
+      var root = nodesToProcess[i].nodeType === Node.ELEMENT_NODE ? nodesToProcess[i] : nodesToProcess[i].parentElement;
+      if (root && root.isConnected) stitchSuffixSpans(root);
+    }
   } finally {
     isFlushing = false;
     startObserver();
@@ -386,6 +414,7 @@ function flushObserver() {
 }
 
 function startObserver() {
+  if (!document.body || !shouldProcess()) return;
   if (observer) observer.disconnect();
 
   observer = new MutationObserver(function (mutations) {
@@ -395,31 +424,28 @@ function startObserver() {
       var mutation = mutations[m];
       for (var n = 0; n < mutation.addedNodes.length; n++) {
         var added = mutation.addedNodes[n];
-        if (added.nodeType === Node.ELEMENT_NODE && added.classList && added.classList.contains('lingua-tint-span')) continue;
-        if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.classList && added.parentElement.classList.contains('lingua-tint-span')) continue;
-        if (location.hostname.includes('notebooklm.google.com')) {
+        if (added.nodeType === Node.ELEMENT_NODE && added.matches(OWNED_SELECTOR)) continue;
+        if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.matches(OWNED_SELECTOR)) continue;
+        if (isNotebookLM()) {
           const parent = added.nodeType === Node.TEXT_NODE ? added.parentElement : added;
-          if (parent && !isInsideNotebookLMChat(parent) && !(added.nodeType === Node.ELEMENT_NODE && added.querySelector && added.querySelector('chat-panel, .chat-panel, .chat-panel-content, chat-message'))) {
+          if (parent && !isInsideNotebookLMChat(parent) && !(added.nodeType === Node.ELEMENT_NODE && added.querySelector && added.querySelector(NOTEBOOKLM_SELECTOR))) {
             continue;
           }
         }
-        pendingNodes.push(added);
+        pendingNodes.add(added);
       }
       if (mutation.type === 'characterData') {
         var p = mutation.target.parentElement;
-        if (p && p.classList && !p.classList.contains('lingua-tint-span')) {
-          if (location.hostname.includes('notebooklm.google.com') && !isInsideNotebookLMChat(p)) {
+        if (p && !p.matches(OWNED_SELECTOR)) {
+          if (isNotebookLM() && !isInsideNotebookLMChat(p)) {
             continue;
           }
-          pendingChars.push({
-            node: mutation.target,
-            parent: p,
-          });
+          pendingChars.add(mutation.target);
         }
       }
     }
 
-    if (!observerTimer && (pendingNodes.length > 0 || pendingChars.length > 0)) {
+    if (!observerTimer && (pendingNodes.size > 0 || pendingChars.size > 0)) {
       observerTimer = setTimeout(flushObserver, 50);
     }
   });
@@ -431,18 +457,38 @@ function startObserver() {
   });
 }
 
+function stopObserver() {
+  if (observer) observer.disconnect();
+  if (observerTimer) clearTimeout(observerTimer);
+  observerTimer = null;
+  pendingNodes.clear();
+  pendingChars.clear();
+}
+
+function sanitizeSettings(saved) {
+  return {
+    enabled: typeof saved.enabled === 'boolean' ? saved.enabled : DEFAULTS.enabled,
+    siteMode: saved.siteMode === 'all' || saved.siteMode === 'notebooklm' ? saved.siteMode : DEFAULTS.siteMode,
+    germanEnabled: typeof saved.germanEnabled === 'boolean' ? saved.germanEnabled : DEFAULTS.germanEnabled,
+    spanishEnabled: typeof saved.spanishEnabled === 'boolean' ? saved.spanishEnabled : DEFAULTS.spanishEnabled,
+    germanColor: /^#[0-9a-f]{6}$/i.test(saved.germanColor) ? saved.germanColor : DEFAULTS.germanColor,
+    spanishColor: /^#[0-9a-f]{6}$/i.test(saved.spanishColor) ? saved.spanishColor : DEFAULTS.spanishColor,
+  };
+}
+
 function init() {
   chrome.storage.sync.get(DEFAULTS, function (saved) {
-    settings = Object.assign({}, DEFAULTS, saved);
+    settings = sanitizeSettings(saved);
     applySettings();
-    startObserver();
   });
 
   chrome.storage.onChanged.addListener(function (changes) {
-    var keys = Object.keys(changes);
+    var keys = Object.keys(changes).filter(function (key) { return key in DEFAULTS; });
+    if (keys.length === 0) return;
     for (var i = 0; i < keys.length; i++) {
       settings[keys[i]] = changes[keys[i]].newValue;
     }
+    settings = sanitizeSettings(settings);
     applySettings(keys);
   });
 }
