@@ -16,6 +16,7 @@ function isSkippedAncestor(el) {
     if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE', 'MAT-ICON', 'BUTTON', 'SVG', 'MATH'].includes(tag)) return true;
     if (el.isContentEditable) return true;
     if (el.classList && Array.from(el.classList).some(c => /(^|[-_])(code|katex)([-_]|$)/i.test(c))) return true;
+    if (el.matches && el.matches('[data-lingua-tint-ui]')) return true;
     el = el.parentElement;
   }
   return false;
@@ -334,6 +335,10 @@ function isCosmetic(key) {
   return key === 'germanColor' || key === 'spanishColor';
 }
 
+function isPronunciationSetting(key) {
+  return key.startsWith('pronunciation');
+}
+
 function updateColors() {
   var spans = document.querySelectorAll(OWNED_SELECTOR + '[data-lingua-lang]');
   for (var i = 0; i < spans.length; i++) {
@@ -348,6 +353,7 @@ function applySettings(changedKeys) {
   if (!shouldProcess()) {
     stopObserver();
     restoreDocument();
+    PronunciationController.destroy();
     return;
   }
 
@@ -357,9 +363,16 @@ function applySettings(changedKeys) {
     return;
   }
 
+  if (changedKeys && changedKeys.length > 0 && changedKeys.every(isPronunciationSetting)) {
+    PronunciationController.update(settings);
+    startObserver();
+    return;
+  }
+
   stopObserver();
   restoreDocument();
   processDocument();
+  PronunciationController.init(settings);
   startObserver();
 }
 
@@ -425,7 +438,9 @@ function startObserver() {
       for (var n = 0; n < mutation.addedNodes.length; n++) {
         var added = mutation.addedNodes[n];
         if (added.nodeType === Node.ELEMENT_NODE && added.matches(OWNED_SELECTOR)) continue;
+        if (added.nodeType === Node.ELEMENT_NODE && added.matches('[data-lingua-tint-ui]')) continue;
         if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.matches(OWNED_SELECTOR)) continue;
+        if (added.nodeType === Node.TEXT_NODE && added.parentElement && added.parentElement.matches('[data-lingua-tint-ui]')) continue;
         if (isNotebookLM()) {
           const parent = added.nodeType === Node.TEXT_NODE ? added.parentElement : added;
           if (parent && !isInsideNotebookLMChat(parent) && !(added.nodeType === Node.ELEMENT_NODE && added.querySelector && added.querySelector(NOTEBOOKLM_SELECTOR))) {
@@ -473,6 +488,11 @@ function sanitizeSettings(saved) {
     spanishEnabled: typeof saved.spanishEnabled === 'boolean' ? saved.spanishEnabled : DEFAULTS.spanishEnabled,
     germanColor: /^#[0-9a-f]{6}$/i.test(saved.germanColor) ? saved.germanColor : DEFAULTS.germanColor,
     spanishColor: /^#[0-9a-f]{6}$/i.test(saved.spanishColor) ? saved.spanishColor : DEFAULTS.spanishColor,
+    pronunciationEnabled: typeof saved.pronunciationEnabled === 'boolean' ? saved.pronunciationEnabled : DEFAULTS.pronunciationEnabled,
+    pronunciationHoverDelay: typeof saved.pronunciationHoverDelay === 'number' ? Math.max(200, Math.min(1500, saved.pronunciationHoverDelay)) : DEFAULTS.pronunciationHoverDelay,
+    pronunciationRate: typeof saved.pronunciationRate === 'number' ? Math.max(0.5, Math.min(1.2, saved.pronunciationRate)) : DEFAULTS.pronunciationRate,
+    pronunciationVoiceURI: typeof saved.pronunciationVoiceURI === 'string' && saved.pronunciationVoiceURI.length <= 256 ? saved.pronunciationVoiceURI : DEFAULTS.pronunciationVoiceURI,
+    pronunciationAutoPlay: typeof saved.pronunciationAutoPlay === 'boolean' ? saved.pronunciationAutoPlay : DEFAULTS.pronunciationAutoPlay,
   };
 }
 
