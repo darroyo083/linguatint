@@ -5,4 +5,9 @@ var DEFAULTS = {
   spanishColor: '#16a34a',
   germanEnabled: true,
   spanishEnabled: true,
+  pronunciationEnabled: true,
+  pronunciationHoverDelay: 350,
+  pronunciationRate: 0.8,
+  pronunciationVoiceURI: '',
+  pronunciationAutoPlay: false,
 };

@@ -4,6 +4,9 @@ const $ = function (id) {
   return document.getElementById(id);
 };
 
+var germanVoices = [];
+var popupSpeech = null;
+
 function loadSettings() {
   chrome.storage.sync.get(DEFAULTS, render);
 }
@@ -18,7 +21,68 @@ function render(settings) {
   if (modeRadio) modeRadio.checked = true;
   $('germanColor').value = settings.germanColor;
   $('spanishColor').value = settings.spanishColor;
+  $('pronunciationEnabled').checked = settings.pronunciationEnabled;
+  var rateRadio = document.querySelector('input[name="pronRate"][value="' + settings.pronunciationRate + '"]');
+  if (rateRadio) rateRadio.checked = true;
+  populateVoiceSelect(settings.pronunciationVoiceURI);
+  updatePronTestButton(settings);
   updatePreview(settings);
+}
+
+function populateVoiceSelect(preferredURI) {
+  var sel = $('pronunciationVoice');
+  if (!sel) return;
+  if (germanVoices.length === 0) {
+    sel.innerHTML = '<option value="">No German voices available</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  sel.innerHTML = '';
+  var found = false;
+  for (var i = 0; i < germanVoices.length; i++) {
+    var v = germanVoices[i];
+    var opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    opt.textContent = v.name + ' (' + v.lang + ')';
+    if (v.voiceURI === preferredURI) { opt.selected = true; found = true; }
+    sel.appendChild(opt);
+  }
+  if (!found && preferredURI) {
+    sel.innerHTML = '<option value="' + preferredURI + '" selected>' + preferredURI + '</option>' + sel.innerHTML;
+  }
+}
+
+function updatePronTestButton(settings) {
+  var btn = $('pronunciationTest');
+  if (!btn) return;
+  if (!settings.pronunciationEnabled) {
+    btn.disabled = true;
+    return;
+  }
+  var hasVoice = germanVoices.length > 0;
+  if (hasVoice) {
+    var pref = $('pronunciationVoice').value;
+    var selected = germanVoices.some(function (v) { return v.voiceURI === pref; });
+    btn.disabled = !selected;
+  } else {
+    btn.disabled = true;
+  }
+}
+
+function refreshGermanVoices() {
+  var allVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  germanVoices = [];
+  for (var i = 0; i < allVoices.length; i++) {
+    var v = allVoices[i];
+    if (v.lang && v.lang.toLowerCase().startsWith('de') && v.localService === true) {
+      germanVoices.push(v);
+    }
+  }
+  chrome.storage.sync.get(DEFAULTS, function (settings) {
+    populateVoiceSelect(settings.pronunciationVoiceURI);
+    updatePronTestButton(settings);
+  });
 }
 
 function saveSetting(key, value) {
@@ -90,8 +154,54 @@ $('spanishColor').addEventListener('input', function (e) {
   }, 200);
 });
 
+$('pronunciationEnabled').addEventListener('change', function (e) {
+  saveSetting('pronunciationEnabled', e.target.checked);
+  updatePronTestButton({ pronunciationEnabled: e.target.checked });
+});
+
+$('pronunciationVoice').addEventListener('change', function (e) {
+  saveSetting('pronunciationVoiceURI', e.target.value);
+  updatePronTestButton({ pronunciationEnabled: $('pronunciationEnabled').checked });
+});
+
+var rateRadios = document.querySelectorAll('input[name="pronRate"]');
+for (var i = 0; i < rateRadios.length; i++) {
+  rateRadios[i].addEventListener('change', function (e) {
+    if (e.target.checked) {
+      saveSetting('pronunciationRate', parseFloat(e.target.value));
+    }
+  });
+}
+
+$('pronunciationTest').addEventListener('click', function () {
+  var prefVoice = $('pronunciationVoice').value;
+  var prefRate = parseFloat(document.querySelector('input[name="pronRate"]:checked').value || '0.8');
+  var selected = null;
+  for (var i = 0; i < germanVoices.length; i++) {
+    if (germanVoices[i].voiceURI === prefVoice) { selected = germanVoices[i]; break; }
+  }
+  if (!selected) return;
+  if (popupSpeech) window.speechSynthesis.cancel();
+  var utterance = new SpeechSynthesisUtterance('Freundschaft');
+  utterance.voice = selected;
+  utterance.lang = selected.lang || 'de-DE';
+  utterance.rate = prefRate;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  popupSpeech = utterance;
+  window.speechSynthesis.speak(utterance);
+});
+
 chrome.storage.onChanged.addListener(function () {
   chrome.storage.sync.get(DEFAULTS, render);
 });
+
+if (window.speechSynthesis) {
+  var voicesLoaded = window.speechSynthesis.getVoices();
+  if (voicesLoaded.length > 0) {
+    refreshGermanVoices();
+  }
+  window.speechSynthesis.addEventListener('voiceschanged', refreshGermanVoices);
+}
 
 loadSettings();

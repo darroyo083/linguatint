@@ -61,6 +61,46 @@
         <span class="preview-es">el perro</span>
       </div>
     </section>
+
+    <section class="section" id="pronunciation-section">
+      <h2>Pronunciación alemana</h2>
+      <label class="toggle-row">
+        <span class="toggle-label">Pronunciación</span>
+        <label class="switch">
+          <input type="checkbox" id="pronunciationEnabled">
+          <span class="slider"></span>
+        </label>
+      </label>
+
+      <div class="pron-row">
+        <span class="pron-label">Voz</span>
+        <select id="pronunciationVoice" class="pron-select" disabled>
+          <option value="">Cargando...</option>
+        </select>
+      </div>
+
+      <div class="pron-row">
+        <span class="pron-label">Velocidad</span>
+        <div class="pron-speed">
+          <label class="speed-radio">
+            <input type="radio" name="pronRate" value="0.5">
+            <span>0.5</span>
+          </label>
+          <label class="speed-radio">
+            <input type="radio" name="pronRate" value="0.8">
+            <span>0.8</span>
+          </label>
+          <label class="speed-radio">
+            <input type="radio" name="pronRate" value="1.0">
+            <span>1.0</span>
+          </label>
+        </div>
+      </div>
+
+      <button id="pronunciationTest" class="pron-test" disabled>
+        ▶ Escuchar
+      </button>
+    </section>
   </div>
   <script src="../content/defaults.js"></script>
   <script src="popup.js"></script>

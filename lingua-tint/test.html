@@ -46,11 +46,26 @@
   <h2>7. Neutral (no debería colorear)</h2>
   <p>123 ... !? Hello World</p>
 
+  <h2>8. Pronunciación alemana (hover + Alt+clic)</h2>
+  <p>Freunden gratuliert Nachbarin Schokolade</p>
+  <p>Mädchen Straße Geburtstagsgeschenk</p>
+  <p>Der Hund (solo alemán)</p>
+
+  <h2>9. Traducción alemán-español (hover)</h2>
+  <p>Freund Wasser gut</p>
+  <p>Freunde Nachbarin</p>
+  <p>Mädchen geht</p>
+
   <hr>
   <p><strong>Instrucciones:</strong> Abre la consola (F12) y escribe <code>testLingua()</code>.</p>
+  <p><strong>Pronunciación:</strong> Pasa el cursor sobre una palabra azul y pulsa ▶. O pulsa <kbd>Alt</kbd>+clic para escuchar directamente.</p>
+  <p><strong>Traducción:</strong> Al pasar el cursor, verás la traducción al español debajo de la palabra.</p>
 
   <script src="content/dictionaries.js"></script>
   <script src="content/language-detector.js"></script>
+  <script src="data/translations-de-es.js"></script>
+  <script src="content/translation.js"></script>
+  <script src="content/pronunciation.js"></script>
   <script>
   function testLingua() {
     const tests = document.querySelectorAll('p');
@@ -59,12 +74,31 @@
       if (text.length < 3) return;
       const lang = detectLanguage(text);
       const pass = lang === 'german' || lang === 'spanish';
-      const label = pass ? 'PASS' : 'NEUTRAL';
       const cls = pass ? 'pass' : 'fail';
       console.log('P' + (i+1) + ': ' + lang.toUpperCase() + ' → "' + text.substring(0, 50) + '"');
     });
   }
   testLingua();
+
+  // Log translations for test words
+  if (typeof GermanTranslations !== 'undefined') {
+    var testWords = ['Freund', 'Freunden', 'Freunde', 'Mädchen', 'Nachbarin', 'geht', 'gut', 'Wasser', 'xyz', '(Freund)'];
+    testWords.forEach(function(w) {
+      var r = GermanTranslations.lookup(w);
+      if (r.found) {
+        console.log('TRANSLATION: ' + w + ' → ' + r.translations.join(', ') + (r.lemma !== r.normalized ? ' (← ' + r.lemma + ')' : ''));
+      } else {
+        console.log('TRANSLATION: ' + w + ' → not found');
+      }
+    });
+  }
+
+  // Simulate basic extension processing to test pronunciation hover
+  if (typeof PronunciationController !== 'undefined') {
+    var DEFAULTS = DEFAULTS || { pronunciationEnabled: true, pronunciationHoverDelay: 350, pronunciationRate: 0.8, pronunciationVoiceURI: '', pronunciationAutoPlay: false };
+    PronunciationController.init(DEFAULTS);
+    console.log('Pronunciation controller initialized. Hover over German words to test.');
+  }
   </script>
 </body>
 </html>
