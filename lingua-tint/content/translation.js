@@ -10,6 +10,7 @@ var GermanTranslations = (function () {
   var statusListeners = [];
   var CACHE_MAX = 1000;
   var _debug = false;
+  var _consented = false;
 
   function normalize(word) {
     if (typeof word !== 'string') return '';
@@ -30,6 +31,7 @@ var GermanTranslations = (function () {
     if (translatorStatus === 'downloading' && downloadProgress) {
       details.progress = downloadProgress.loaded;
       details.total = downloadProgress.total;
+      details.pct = downloadProgress.pct;
     }
     try { listener(translatorStatus, details); } catch (e) {}
   }
@@ -37,6 +39,10 @@ var GermanTranslations = (function () {
   function getStatus() { return translatorStatus; }
 
   function getDownloadProgress() { return downloadProgress; }
+
+  function setConsented() {
+    _consented = true;
+  }
 
   function lookupWord(normalized) {
     var entry = dict[normalized];
@@ -79,43 +85,132 @@ var GermanTranslations = (function () {
     return result;
   }
 
-  function initTranslator() {
-    if (translatorStatus !== 'unchecked') return;
-    if (typeof Translator === 'undefined') {
-      translatorStatus = 'unavailable';
-      notifyStatus('unavailable', { message: 'Translation unavailable' });
-      return;
-    }
-    translatorStatus = 'checking';
-    downloadProgress = null;
-    notifyStatus('checking', { message: 'Preparing translation...' });
-    if (_debug) console.log('[LinguaTint] Translator: checking availability');
+  function createTranslator() {
+    if (translatorInstance) return Promise.resolve(translatorInstance);
+    return Translator.create({
+      sourceLanguage: 'de',
+      targetLanguage: 'es'
+    }).then(function (instance) {
+      translatorInstance = instance;
+      return instance;
+    });
+  }
 
-    Translator.create({
+  function createTranslatorWithMonitor() {
+    return Translator.create({
       sourceLanguage: 'de',
       targetLanguage: 'es',
       monitor: function (m) {
         m.addEventListener('downloadprogress', function (e) {
-          downloadProgress = { loaded: e.loaded, total: e.total };
-          translatorStatus = 'downloading';
           var pct = Math.round(e.loaded * 100 / e.total);
-          notifyStatus('downloading', { progress: e.loaded, total: e.total, pct: pct, message: 'Downloading translator... ' + pct + '%' });
+          downloadProgress = { loaded: e.loaded, total: e.total, pct: pct };
+          translatorStatus = 'downloading';
+          notifyStatus('downloading', { progress: e.loaded, total: e.total, pct: pct, message: t('downloadingModel') + ' ' + pct + '%' });
           if (_debug) console.log('[LinguaTint] Translator download: ' + pct + '%');
         });
       }
-    }).then(function (instance) {
+    });
+  }
+
+  function checkAvailability() {
+    if (translatorStatus !== 'unchecked') return;
+    if (typeof Translator === 'undefined') {
+      translatorStatus = 'unsupported';
+      notifyStatus('unsupported', { message: t('translationNotSupported') });
+      if (_debug) console.log('[LinguaTint] Translator: not supported');
+      return;
+    }
+    translatorStatus = 'checking';
+    notifyStatus('checking', { message: t('checkingModel') });
+    if (_debug) console.log('[LinguaTint] Translator: checking availability');
+
+    Translator.availability({
+      sourceLanguage: 'de',
+      targetLanguage: 'es'
+    }).then(function (availability) {
+      if (_debug) console.log('[LinguaTint] Translator availability: ' + availability);
+      if (availability === 'available') {
+        // Model is confirmed installed. Safe to create.
+        createTranslator().then(function () {
+          translatorStatus = 'available';
+          downloadProgress = null;
+          notifyStatus('available', { message: null });
+          if (_debug) console.log('[LinguaTint] Translator: ready');
+          processPendingQueue();
+        }).catch(function () {
+          translatorStatus = 'error';
+          notifyStatus('error', { message: t('failedCreateTranslator') });
+          if (_debug) console.log('[LinguaTint] Translator: create failed');
+          drainPendingQueue();
+        });
+      } else if (availability === 'downloadable') {
+        // Privacy: may be 'downloadable' even if model exists.
+        // Only call create() if user has explicitly consented.
+        if (_consented) {
+          if (_debug) console.log('[LinguaTint] Translator: downloadable but consented, creating...');
+          createTranslator().then(function () {
+            translatorStatus = 'available';
+            downloadProgress = null;
+            notifyStatus('available', { message: null });
+            if (_debug) console.log('[LinguaTint] Translator: ready (consented)');
+            processPendingQueue();
+          }).catch(function () {
+            translatorStatus = 'downloadable';
+            downloadProgress = null;
+            notifyStatus('downloadable', { message: t('modelRequired'), pct: 0 });
+            if (_debug) console.log('[LinguaTint] Translator: model needs download');
+          });
+        } else {
+          translatorStatus = 'downloadable';
+          downloadProgress = null;
+          notifyStatus('downloadable', { message: t('modelRequired'), pct: 0 });
+          if (_debug) console.log('[LinguaTint] Translator: model needs download');
+          // Check chrome.storage.local in background (for consented flag from popup)
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            try {
+              chrome.storage.local.get('translationConsented', function(result) {
+                if (result && result.translationConsented) {
+                  _consented = true;
+                  if (_debug) console.log('[LinguaTint] Translator: consent found in storage');
+                  // Re-run availability check with consent
+                  if (translatorStatus === 'downloadable') {
+                    translatorStatus = 'unchecked';
+                    checkAvailability();
+                  }
+                }
+              });
+            } catch(e) {}
+          }
+        }
+      } else {
+        translatorStatus = 'unsupported';
+        notifyStatus('unsupported', { message: t('translationUnavailable') });
+        if (_debug) console.log('[LinguaTint] Translator: unavailable');
+      }
+    }).catch(function () {
+      translatorStatus = 'error';
+      notifyStatus('error', { message: t('couldNotCheck') });
+      if (_debug) console.log('[LinguaTint] Translator: availability check failed');
+    });
+  }
+
+  function startDownload() {
+    if (translatorStatus !== 'downloadable') return;
+    if (_debug) console.log('[LinguaTint] Translator: starting download');
+    _consented = true;
+
+    createTranslatorWithMonitor().then(function (instance) {
       translatorInstance = instance;
       translatorStatus = 'available';
       downloadProgress = null;
       notifyStatus('available', { message: null });
-      if (_debug) console.log('[LinguaTint] Translator: ready');
+      if (_debug) console.log('[LinguaTint] Translator: ready after download');
       processPendingQueue();
     }).catch(function () {
-      translatorStatus = 'unavailable';
+      translatorStatus = 'error';
       downloadProgress = null;
-      notifyStatus('unavailable', { message: 'Translation unavailable' });
-      if (_debug) console.log('[LinguaTint] Translator: unavailable');
-      drainPendingQueue();
+      notifyStatus('error', { message: t('couldNotDownload') });
+      if (_debug) console.log('[LinguaTint] Translator: download failed');
     });
   }
 
@@ -178,13 +273,13 @@ var GermanTranslations = (function () {
         if (cached.lemma) r.lemma = cached.lemma;
         if (cached.partOfSpeech) r.partOfSpeech = cached.partOfSpeech;
         if (cached.gender) r.gender = cached.gender;
-        if (_debug) console.log('[LinguaTint] translate "' + original + '" → cache (' + cached.source + '): ' + cached.translations.join(', '));
+        if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 cache (' + cached.source + '): ' + cached.translations.join(', '));
         resolve(r);
         return;
       }
 
-      if (translatorStatus === 'unchecked') {
-        initTranslator();
+      if (translatorStatus === 'unchecked' || translatorStatus === 'checking') {
+        checkAvailability();
       }
 
       if (translatorStatus === 'available' && translatorInstance) {
@@ -200,10 +295,10 @@ var GermanTranslations = (function () {
           };
           if (Object.keys(translationCache).length >= CACHE_MAX) translationCache = {};
           translationCache[normalized] = { translations: result.translations, source: 'translator' };
-          if (_debug) console.log('[LinguaTint] translate "' + original + '" → chrome (' + elapsed + 'ms): ' + apiText);
+          if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 chrome (' + elapsed + 'ms): ' + apiText);
           resolve(result);
         }).catch(function (err) {
-          if (_debug) console.log('[LinguaTint] translate "' + original + '" → error: ' + (err && err.message ? err.message : String(err)));
+          if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 error: ' + (err && err.message ? err.message : String(err)));
           resolve({ found: false, original: original, normalized: normalized, source: 'none' });
         });
         return;
@@ -213,13 +308,13 @@ var GermanTranslations = (function () {
       if (fallback.found) {
         fallback.original = original;
         fallback.normalized = normalized;
-        if (_debug) console.log('[LinguaTint] translate "' + original + '" → dictionary: ' + fallback.translations.join(', '));
+        if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 dictionary: ' + fallback.translations.join(', '));
         resolve(fallback);
         return;
       }
 
-      if (translatorStatus === 'checking' || translatorStatus === 'downloading') {
-        if (_debug) console.log('[LinguaTint] translate "' + original + '" → queued (status: ' + translatorStatus + ')');
+      if (translatorStatus === 'downloading' || translatorStatus === 'downloadable') {
+        if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 queued (status: ' + translatorStatus + ')');
         pendingQueue.push({
           original: original,
           normalized: normalized,
@@ -229,7 +324,7 @@ var GermanTranslations = (function () {
         return;
       }
 
-      if (_debug) console.log('[LinguaTint] translate "' + original + '" → none');
+      if (_debug) console.log('[LinguaTint] translate "' + original + '" \u2192 none');
       resolve({ found: false, original: original, normalized: normalized, source: 'none' });
     });
   }
@@ -246,10 +341,14 @@ var GermanTranslations = (function () {
     lookup: lookup,
     translate: translate,
     resetTranslator: resetTranslator,
+    checkAvailability: checkAvailability,
+    startDownload: startDownload,
+    setConsented: setConsented,
     onStatusChange: onStatusChange,
     getStatus: getStatus,
     getDownloadProgress: getDownloadProgress,
     _normalize: normalize,
-    _debug: false
+    get _debug() { return _debug; },
+    set _debug(v) { _debug = v; }
   };
 })();

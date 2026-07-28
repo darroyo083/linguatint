@@ -53,7 +53,7 @@ function populateVoiceSelect(preferredURI) {
   var sel = $('pronunciationVoice');
   if (!sel) return;
   if (germanVoices.length === 0) {
-    sel.innerHTML = '<option value="">No German voices available</option>';
+    sel.innerHTML = '<option value="">' + t('noVoices') + '</option>';
     sel.disabled = true;
     return;
   }
@@ -105,6 +105,88 @@ function updatePreview(settings) {
     es.style.color = settings.spanishEnabled ? settings.spanishColor : 'inherit';
     es.style.opacity = settings.spanishEnabled ? '1' : '0.3';
   }
+}
+
+function applyLanguage(lang) {
+  UI_LANGUAGE = lang || 'en';
+
+  var els = document.querySelectorAll('[data-i18n]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    var key = el.getAttribute('data-i18n');
+    var translation = t(key);
+    if (el.tagName === 'INPUT' && el.type === 'radio') {
+      var label = el.parentElement;
+      if (label) {
+        var span = label.querySelector('span');
+        if (span) span.textContent = translation;
+      }
+    } else if (el.tagName === 'OPTION') {
+      el.textContent = translation;
+    } else {
+      el.innerHTML = translation;
+    }
+  }
+
+  var btnEn = $('langEn');
+  var btnEs = $('langEs');
+  if (btnEn) {
+    btnEn.setAttribute('aria-label', t('english'));
+    btnEn.setAttribute('title', t('english'));
+    btnEn.classList.toggle('active', lang === 'en');
+  }
+  if (btnEs) {
+    btnEs.setAttribute('aria-label', t('spanishLang'));
+    btnEs.setAttribute('title', t('spanishLang'));
+    btnEs.classList.toggle('active', lang === 'es');
+  }
+
+  updateDynamicUI();
+}
+
+function updateDynamicUI() {
+  var sel = $('pronunciationVoice');
+  if (sel && sel.options.length === 1 && sel.options[0].value === '') {
+    sel.options[0].textContent = t('noVoices');
+  }
+  updateTranslationDisplay();
+  var voiceExpl = $('voiceExplanation');
+  if (voiceExpl && voiceExpl.getAttribute('data-i18n')) {
+    voiceExpl.innerHTML = t(voiceExpl.getAttribute('data-i18n'));
+  }
+}
+
+function updateTranslationDisplay() {
+  // Called by applyLanguage to refresh the current translation state text
+  var icon = $('translationIcon');
+  var title = $('translationTitle');
+  var action = $('translationAction');
+  if (!icon || !title || !action) return;
+
+  var state = getCurrentTranslationState();
+  if (state === 'available' && title) {
+    title.textContent = '\u2713 ' + t('ready');
+    title.style.color = '#16a34a';
+    icon.style.display = 'none';
+  } else if (state === 'downloadable') {
+    title.textContent = t('modelRequired');
+    action.textContent = t('download');
+  } else if (state === 'downloading') {
+    updateDownloadingLabel();
+  } else if (state === 'error') {
+    title.textContent = t('downloadFailed');
+    action.textContent = t('retry');
+  } else if (state === 'unsupported') {
+    title.textContent = t('notSupported');
+  } else if (state === 'checking') {
+    title.textContent = t('checkingModel');
+  }
+}
+
+var _translationState = '';
+
+function getCurrentTranslationState() {
+  return _translationState;
 }
 
 $('enabled').addEventListener('change', function (e) {
@@ -210,6 +292,7 @@ $('voiceHelpLink').addEventListener('click', function () {
 var translationDownloading = false;
 
 function setTranslationState(state, pct) {
+  _translationState = state;
   var icon = $('translationIcon');
   var title = $('translationTitle');
   var detail = $('translationDetail');
@@ -229,56 +312,68 @@ function setTranslationState(state, pct) {
   switch (state) {
     case 'checking':
       icon.textContent = '\u23F3';
-      title.textContent = 'Checking model...';
+      title.textContent = t('checkingModel');
       detail.textContent = '';
       break;
     case 'downloadable':
       icon.textContent = '\u21E9';
-      title.textContent = 'Model required';
+      title.textContent = t('modelRequired');
       detail.textContent = '';
       actionRow.style.display = 'block';
-      action.textContent = 'Download';
+      action.textContent = t('download');
       action.disabled = false;
       break;
     case 'downloading':
       icon.textContent = '\u23F3';
-      title.textContent = 'Downloading model...';
+      title.textContent = pct !== undefined ? t('downloadingModel') + ' ' + pct + '%' : t('downloadingModel');
       detail.textContent = pct !== undefined ? pct + '%' : '';
       progress.style.display = 'block';
       fill.style.width = (pct !== undefined ? pct : 0) + '%';
       actionRow.style.display = 'block';
-      action.textContent = 'Downloading...';
+      action.textContent = t('downloading');
       action.disabled = true;
       break;
     case 'available':
       icon.textContent = '\u2713';
       icon.style.color = '#16a34a';
-      title.textContent = 'Ready';
-      detail.textContent = '';
-      // Compact: hide icon when ready, show "✓ Ready" in title
       icon.style.display = 'none';
-      title.textContent = '\u2713 Ready';
+      title.textContent = '\u2713 ' + t('ready');
       title.style.color = '#16a34a';
+      detail.textContent = '';
       break;
     case 'error':
       icon.textContent = '\u2717';
       icon.style.color = '#dc2626';
-      title.textContent = 'Download failed';
+      title.textContent = t('downloadFailed');
       detail.textContent = '';
       actionRow.style.display = 'block';
-      action.textContent = 'Retry';
+      action.textContent = t('retry');
       action.disabled = false;
       break;
     case 'unsupported':
       icon.textContent = '\u2717';
       icon.style.color = '#9ca3af';
-      title.textContent = 'Not supported';
+      title.textContent = t('notSupported');
       detail.textContent = '';
       break;
     default:
       icon.textContent = '';
       title.textContent = '';
       detail.textContent = '';
+  }
+}
+
+function updateDownloadingLabel() {
+  // Re-apply the downloading state text for language switch
+  var title = $('translationTitle');
+  var detail = $('translationDetail');
+  if (title && detail) {
+    var pct = detail.textContent.replace('%', '');
+    if (pct && !isNaN(pct)) {
+      title.textContent = t('downloadingModel') + ' ' + pct + '%';
+    } else {
+      title.textContent = t('downloadingModel');
+    }
   }
 }
 
@@ -328,6 +423,21 @@ $('translationAction').addEventListener('click', function () {
   startModelDownload();
 });
 
+// Language switching
+$('langEn').addEventListener('click', function () {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ uiLanguage: 'en' });
+  }
+  applyLanguage('en');
+});
+
+$('langEs').addEventListener('click', function () {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set({ uiLanguage: 'es' });
+  }
+  applyLanguage('es');
+});
+
 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener(function () {
     chrome.storage.sync.get(DEFAULTS, render);
@@ -340,6 +450,16 @@ if (window.speechSynthesis) {
     refreshGermanVoices();
   }
   window.speechSynthesis.addEventListener('voiceschanged', refreshGermanVoices);
+}
+
+// Load saved language preference
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+  chrome.storage.sync.get('uiLanguage', function (result) {
+    var lang = result && result.uiLanguage ? result.uiLanguage : 'en';
+    applyLanguage(lang);
+  });
+} else {
+  applyLanguage('en');
 }
 
 checkTranslationAvailability();

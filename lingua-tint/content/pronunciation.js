@@ -170,10 +170,10 @@ var PronunciationController = (function () {
         buttonEl.disabled = (newState === 'unavailable' || newState === 'disabled');
         if (newState === 'speaking') {
           buttonEl.textContent = '\u25A0';
-          buttonEl.setAttribute('aria-label', 'Stop');
+          buttonEl.setAttribute('aria-label', t('stop'));
         } else {
           buttonEl.textContent = '\u25B6';
-          buttonEl.setAttribute('aria-label', currentWord ? 'Pronounce ' + currentWord : 'Pronounce');
+          buttonEl.setAttribute('aria-label', currentWord ? t('pronounce') + ' ' + currentWord : t('pronounce'));
         }
       }
     }
@@ -198,16 +198,6 @@ var PronunciationController = (function () {
       return;
     }
     setPopoverState('ready');
-  }
-
-  function toggleVoiceInfo() {
-    voiceInfoOpen = !voiceInfoOpen;
-    if (voiceExplanationEl) {
-      voiceExplanationEl.style.display = voiceInfoOpen ? 'block' : 'none';
-    }
-    if (voiceWhyBtnEl) {
-      voiceWhyBtnEl.textContent = voiceInfoOpen ? 'Hide' : 'Learn why';
-    }
   }
 
   function buildPopover() {
@@ -265,7 +255,7 @@ var PronunciationController = (function () {
       '    </div>',
       '    <div>',
       '      <div id="lang">DE</div>',
-      '      <button id="play" aria-label="Pronounce" disabled>\u25B6</button>',
+      '      <button id="play" aria-label="' + t('pronounce') + '" disabled>\u25B6</button>',
       '    </div>',
       '  </div>',
 ,
@@ -324,13 +314,13 @@ var PronunciationController = (function () {
     if (translationActive && typeof GermanTranslations !== 'undefined') {
       var status = GermanTranslations.getStatus();
       if (status === 'checking') {
-        translationEl.textContent = 'Preparing translation...';
+        translationEl.textContent = t('preparingTranslation');
       } else if (status === 'downloading') {
         var prog = GermanTranslations.getDownloadProgress();
         if (prog && prog.total) {
-          translationEl.textContent = 'Downloading translator... ' + Math.round(prog.loaded * 100 / prog.total) + '%';
+            translationEl.textContent = t('downloadingTranslator') + ' ' + Math.round(prog.loaded * 100 / prog.total) + '%';
         } else {
-          translationEl.textContent = 'Downloading translator...';
+          translationEl.textContent = t('downloadingTranslator');
         }
       } else if (status === 'unsupported' || status === 'error') {
         translationEl.textContent = '';
@@ -595,19 +585,17 @@ var PronunciationController = (function () {
     if (!translationEl || popoverState === 'hidden' || popoverState === 'disabled') return;
     if (status === 'downloading') {
       var pct = details.pct || 0;
-      if (!translationEl.textContent || translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent === 'Preparing translation...') {
-        translationEl.textContent = 'Downloading translator... ' + pct + '%';
-      }
+      translationEl.textContent = t('downloadingTranslator') + ' ' + pct + '%';
     } else if (status === 'available') {
-      if (translationEl.textContent === 'Preparing translation...' || translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent === '') {
+      if (translationEl.textContent.indexOf(t('preparingTranslation')) >= 0 || translationEl.textContent.indexOf(t('downloadingTranslator')) >= 0 || translationEl.textContent === '') {
         translationEl.textContent = '';
       }
     } else if (status === 'error') {
-      if (!translationEl.textContent || translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent === 'Preparing translation...') {
+      if (!translationEl.textContent || translationEl.textContent.indexOf(t('preparingTranslation')) >= 0 || translationEl.textContent.indexOf(t('downloadingTranslator')) >= 0) {
         translationEl.textContent = '';
       }
     } else if (status === 'unsupported') {
-      if (!translationEl.textContent || translationEl.textContent === 'Preparing translation...') {
+      if (!translationEl.textContent || translationEl.textContent === t('preparingTranslation')) {
         translationEl.textContent = '';
       }
     }
@@ -623,6 +611,30 @@ var PronunciationController = (function () {
     if (!statusSubscribed && typeof GermanTranslations !== 'undefined' && GermanTranslations.onStatusChange) {
       statusSubscribed = true;
       GermanTranslations.onStatusChange(handleTranslationStatus);
+    }
+    // Listen for UI language changes from the popup
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      if (!window._linguaUIListener) {
+        window._linguaUIListener = true;
+        chrome.storage.onChanged.addListener(function (changes) {
+          if (changes.uiLanguage && typeof UI_LANGUAGE !== 'undefined') {
+            UI_LANGUAGE = changes.uiLanguage.newValue || 'en';
+            // Update visible strings in the current popover if visible
+            if (popoverState !== 'hidden' && popoverState !== 'disabled' && popoverEl) {
+              if (buttonEl) {
+                if (isSpeaking) {
+                  buttonEl.setAttribute('aria-label', t('stop'));
+                } else {
+                  buttonEl.setAttribute('aria-label', currentWord ? t('pronounce') + ' ' + currentWord : t('pronounce'));
+                }
+              }
+              if (voiceWhyBtnEl) {
+                voiceWhyBtnEl.textContent = voiceInfoOpen ? t('hide') : t('learnWhy');
+              }
+            }
+          }
+        });
+      }
     }
     addListeners();
   }

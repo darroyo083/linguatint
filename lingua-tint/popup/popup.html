@@ -8,11 +8,17 @@
 </head>
 <body>
   <div class="container">
-    <h1>LinguaTint</h1>
+    <div class="header-row">
+      <h1>LinguaTint</h1>
+      <div class="lang-switcher">
+        <button id="langEn" class="lang-btn active" data-i18n-title="english" aria-label="English" title="English">🇬🇧</button>
+        <button id="langEs" class="lang-btn" data-i18n-title="spanishLang" aria-label="Español" title="Español">🇪🇸</button>
+      </div>
+    </div>
 
     <section class="section">
       <label class="toggle-row">
-        <span class="toggle-label">Enabled</span>
+        <span class="toggle-label" data-i18n="enabled">Enabled</span>
         <label class="switch">
           <input type="checkbox" id="enabled">
           <span class="slider"></span>
@@ -21,23 +27,23 @@
     </section>
 
     <section class="section">
-      <h2>Scope</h2>
+      <h2 data-i18n="scope">Scope</h2>
       <label class="radio-row">
         <input type="radio" name="siteMode" value="notebooklm">
-        <span>NotebookLM only</span>
+        <span data-i18n="notebookOnly">NotebookLM only</span>
       </label>
       <label class="radio-row">
         <input type="radio" name="siteMode" value="all">
-        <span>All websites</span>
+        <span data-i18n="allWebsites">All websites</span>
       </label>
     </section>
 
     <section class="section">
-      <h2>Languages &amp; Colors</h2>
+      <h2 data-i18n="languagesColors">Languages &amp; Colors</h2>
 
       <div class="color-row">
         <span class="lang-tag lang-de">DE</span>
-        <span class="lang-name">German</span>
+        <span class="lang-name" data-i18n="german">German</span>
         <label class="switch">
           <input type="checkbox" id="germanEnabled">
           <span class="slider"></span>
@@ -47,7 +53,7 @@
 
       <div class="color-row">
         <span class="lang-tag lang-es">ES</span>
-        <span class="lang-name">Spanish</span>
+        <span class="lang-name" data-i18n="spanish">Spanish</span>
         <label class="switch">
           <input type="checkbox" id="spanishEnabled">
           <span class="slider"></span>
@@ -63,11 +69,11 @@
     </section>
 
     <section class="section" id="word-aids-section">
-      <h2>Word Tools</h2>
+      <h2 data-i18n="wordTools">Word Tools</h2>
 
       <div class="aid-row">
         <div class="aid-toggle-row">
-          <span class="toggle-label">Translation</span>
+          <span class="toggle-label" data-i18n="translation">Translation</span>
           <label class="switch">
             <input type="checkbox" id="translationEnabled">
             <span class="slider"></span>
@@ -90,7 +96,7 @@
 
       <div class="aid-row">
         <div class="aid-toggle-row">
-          <span class="toggle-label">Pronunciation</span>
+          <span class="toggle-label" data-i18n="pronunciation">Pronunciation</span>
           <label class="switch">
             <input type="checkbox" id="pronunciationEnabled">
             <span class="slider"></span>
@@ -98,23 +104,23 @@
         </div>
         <div id="pronunciationOptions" class="aid-options">
           <div id="voiceNoVoice" class="aid-no-voice" style="display:none">
-            <span class="aid-no-voice-text">⚠ German voice unavailable</span>
-            <span id="voiceHelpLink" class="aid-help-link">Learn why</span>
+            <span class="aid-no-voice-text">⚠ <span data-i18n="germanVoiceUnavailable">German voice unavailable</span></span>
+            <span id="voiceHelpLink" class="aid-help-link" data-i18n="learnWhy">Learn why</span>
           </div>
-          <div id="voiceExplanation" class="aid-voice-explanation" style="display:none">
+          <div id="voiceExplanation" class="aid-voice-explanation" style="display:none" data-i18n="voiceExplanation">
             LinguaTint uses German voices from your device. None found.<br>
             Windows: Settings → Time &amp; Language → Language → Add German<br>
             macOS: System Settings → Accessibility → Spoken Content → System Voice → German
           </div>
           <div id="voiceControls" style="display:none">
             <div class="aid-option-row">
-              <span class="aid-option-label">Voice</span>
+              <span class="aid-option-label" data-i18n="voice">Voice</span>
               <select id="pronunciationVoice" class="aid-select" disabled>
-                <option value="">Loading...</option>
+                <option value="" data-i18n="loading">Loading...</option>
               </select>
             </div>
             <div class="aid-option-row">
-              <span class="aid-option-label">Speed</span>
+              <span class="aid-option-label" data-i18n="speed">Speed</span>
               <div class="aid-speed">
                 <label class="speed-radio">
                   <input type="radio" name="pronRate" value="0.5">
@@ -130,13 +136,14 @@
                 </label>
               </div>
             </div>
-            <button id="pronunciationTest" class="aid-action-btn" disabled>▶ Listen</button>
+            <button id="pronunciationTest" class="aid-action-btn" disabled>▶ <span data-i18n="listen">Listen</span></button>
           </div>
         </div>
       </div>
     </section>
   </div>
   <script src="../content/defaults.js"></script>
+  <script src="locales.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

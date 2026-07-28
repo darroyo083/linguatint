@@ -6,7 +6,7 @@
   "permissions": ["storage"],
   "content_scripts": [{
     "matches": ["<all_urls>"],
-    "js": ["content/defaults.js", "content/dictionaries.js", "content/language-detector.js", "data/translations-de-es.js", "content/translation.js", "content/pronunciation.js", "content/content.js"],
+    "js": ["content/defaults.js", "content/dictionaries.js", "content/language-detector.js", "data/translations-de-es.js", "popup/locales.js", "content/translation.js", "content/pronunciation.js", "content/content.js"],
     "run_at": "document_idle"
   }],
   "action": {
