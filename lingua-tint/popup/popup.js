@@ -8,7 +8,9 @@ var germanVoices = [];
 var popupSpeech = null;
 
 function loadSettings() {
-  chrome.storage.sync.get(DEFAULTS, render);
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get(DEFAULTS, render);
+  }
 }
 
 function render(settings) {
@@ -21,6 +23,7 @@ function render(settings) {
   if (modeRadio) modeRadio.checked = true;
   $('germanColor').value = settings.germanColor;
   $('spanishColor').value = settings.spanishColor;
+  $('translationEnabled').checked = settings.translationEnabled;
   $('pronunciationEnabled').checked = settings.pronunciationEnabled;
   var rateRadio = document.querySelector('input[name="pronRate"][value="' + settings.pronunciationRate + '"]');
   if (rateRadio) rateRadio.checked = true;
@@ -154,6 +157,10 @@ $('spanishColor').addEventListener('input', function (e) {
   }, 200);
 });
 
+$('translationEnabled').addEventListener('change', function (e) {
+  saveSetting('translationEnabled', e.target.checked);
+});
+
 $('pronunciationEnabled').addEventListener('change', function (e) {
   saveSetting('pronunciationEnabled', e.target.checked);
   updatePronTestButton({ pronunciationEnabled: e.target.checked });
@@ -192,9 +199,137 @@ $('pronunciationTest').addEventListener('click', function () {
   window.speechSynthesis.speak(utterance);
 });
 
-chrome.storage.onChanged.addListener(function () {
-  chrome.storage.sync.get(DEFAULTS, render);
+// Translation model management
+var translationDownloading = false;
+
+function setTranslationState(state, pct) {
+  var icon = $('translationIcon');
+  var title = $('translationTitle');
+  var detail = $('translationDetail');
+  var progress = $('translationProgress');
+  var fill = $('translationProgressFill');
+  var action = $('translationAction');
+
+  if (!icon || !title || !detail || !progress || !fill || !action) return;
+
+  progress.style.display = 'none';
+  action.style.display = 'none';
+  icon.style.color = '';
+
+  switch (state) {
+    case 'checking':
+      icon.textContent = '\u23F3';
+      title.textContent = 'Checking translation model...';
+      detail.textContent = '';
+      break;
+    case 'downloadable':
+      icon.textContent = '\u21E9';
+      title.textContent = 'Translation model required';
+      detail.textContent = 'German \u2192 Spanish on-device';
+      action.textContent = 'Download model';
+      action.style.display = 'block';
+      action.disabled = false;
+      break;
+    case 'downloading':
+      icon.textContent = '\u23F3';
+      title.textContent = 'Downloading model...';
+      detail.textContent = pct !== undefined ? pct + '%' : '';
+      progress.style.display = 'block';
+      fill.style.width = (pct !== undefined ? pct : 0) + '%';
+      action.style.display = 'block';
+      action.textContent = 'Downloading...';
+      action.disabled = true;
+      break;
+    case 'available':
+      icon.textContent = '\u2713';
+      icon.style.color = '#16a34a';
+      title.textContent = 'Ready';
+      detail.textContent = 'German \u2192 Spanish on-device';
+      break;
+    case 'error':
+      icon.textContent = '\u2717';
+      icon.style.color = '#dc2626';
+      title.textContent = 'Download failed';
+      detail.textContent = 'Could not download translation model';
+      action.textContent = 'Try again';
+      action.style.display = 'block';
+      action.disabled = false;
+      break;
+    case 'unsupported':
+      icon.textContent = '\u2717';
+      icon.style.color = '#9ca3af';
+      title.textContent = 'Not supported';
+      detail.textContent = 'Chrome Translator API not available';
+      break;
+    default:
+      icon.textContent = '';
+      title.textContent = '';
+      detail.textContent = '';
+  }
+}
+
+function checkTranslationAvailability() {
+  if (typeof Translator === 'undefined') {
+    setTranslationState('unsupported');
+    return;
+  }
+  setTranslationState('checking');
+  // Use availability() to check. NEVER create() - that could auto-download.
+  Translator.availability({
+    sourceLanguage: 'de',
+    targetLanguage: 'es'
+  }).then(function (availability) {
+    if (availability === 'available') {
+      setTranslationState('available');
+    } else if (availability === 'downloadable') {
+      setTranslationState('downloadable');
+    } else {
+      setTranslationState('unsupported');
+    }
+  }).catch(function () {
+    setTranslationState('unsupported');
+  });
+}
+
+function startModelDownload() {
+  if (translationDownloading) return;
+  translationDownloading = true;
+  setTranslationState('downloading', 0);
+
+  Translator.create({
+    sourceLanguage: 'de',
+    targetLanguage: 'es',
+    monitor: function (m) {
+      m.addEventListener('downloadprogress', function (e) {
+        var pct = Math.round(e.loaded * 100 / e.total);
+        setTranslationState('downloading', pct);
+      });
+    }
+  }).then(function () {
+    translationDownloading = false;
+    setTranslationState('available');
+    // Set consent flag for content script to safely call create()
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ translationConsented: true });
+    }
+  }).catch(function () {
+    translationDownloading = false;
+    setTranslationState('error');
+  });
+}
+
+$('translationAction').addEventListener('click', function () {
+  var state = this.textContent;
+  if (state === 'Download model' || state === 'Try again' || state === 'Descargar modelo' || state === 'Intentar de nuevo') {
+    startModelDownload();
+  }
 });
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener(function () {
+    chrome.storage.sync.get(DEFAULTS, render);
+  });
+}
 
 if (window.speechSynthesis) {
   var voicesLoaded = window.speechSynthesis.getVoices();
@@ -203,5 +338,8 @@ if (window.speechSynthesis) {
   }
   window.speechSynthesis.addEventListener('voiceschanged', refreshGermanVoices);
 }
+
+// Check translation availability on load
+checkTranslationAvailability();
 
 loadSettings();

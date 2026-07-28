@@ -489,6 +489,7 @@ function sanitizeSettings(saved) {
     germanColor: /^#[0-9a-f]{6}$/i.test(saved.germanColor) ? saved.germanColor : DEFAULTS.germanColor,
     spanishColor: /^#[0-9a-f]{6}$/i.test(saved.spanishColor) ? saved.spanishColor : DEFAULTS.spanishColor,
     pronunciationEnabled: typeof saved.pronunciationEnabled === 'boolean' ? saved.pronunciationEnabled : DEFAULTS.pronunciationEnabled,
+    translationEnabled: typeof saved.translationEnabled === 'boolean' ? saved.translationEnabled : DEFAULTS.translationEnabled,
     pronunciationHoverDelay: typeof saved.pronunciationHoverDelay === 'number' ? Math.max(200, Math.min(1500, saved.pronunciationHoverDelay)) : DEFAULTS.pronunciationHoverDelay,
     pronunciationRate: typeof saved.pronunciationRate === 'number' ? Math.max(0.5, Math.min(1.2, saved.pronunciationRate)) : DEFAULTS.pronunciationRate,
     pronunciationVoiceURI: typeof saved.pronunciationVoiceURI === 'string' && saved.pronunciationVoiceURI.length <= 256 ? saved.pronunciationVoiceURI : DEFAULTS.pronunciationVoiceURI,

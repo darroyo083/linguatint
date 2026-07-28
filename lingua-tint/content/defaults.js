@@ -6,6 +6,7 @@ var DEFAULTS = {
   germanEnabled: true,
   spanishEnabled: true,
   pronunciationEnabled: true,
+  translationEnabled: true,
   pronunciationHoverDelay: 350,
   pronunciationRate: 0.8,
   pronunciationVoiceURI: '',

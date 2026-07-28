@@ -9,6 +9,7 @@ var PronunciationController = (function () {
   var availableVoices = [];
   var selectedVoice = null;
   var voiceLoadAttempted = false;
+  var voiceInfoOpen = false;
 
   var currentWord = '';
   var currentRect = null;
@@ -22,8 +23,14 @@ var PronunciationController = (function () {
   var popoverEl = null;
   var wordEl = null;
   var translationEl = null;
+  var lemmaEl = null;
   var buttonEl = null;
   var statusEl = null;
+  var voiceInfoEl = null;
+  var voiceWhyBtnEl = null;
+  var voiceExplanationEl = null;
+
+  var ARTICLES = { masculine: 'der', feminine: 'die', neuter: 'das' };
 
   function normalizePronunciationWord(raw) {
     if (typeof raw !== 'string') return '';
@@ -89,6 +96,7 @@ var PronunciationController = (function () {
   function validatePronunciationSettings(s) {
     return {
       pronunciationEnabled: typeof s.pronunciationEnabled === 'boolean' ? s.pronunciationEnabled : true,
+      translationEnabled: typeof s.translationEnabled === 'boolean' ? s.translationEnabled : true,
       pronunciationHoverDelay: typeof s.pronunciationHoverDelay === 'number' ? Math.max(200, Math.min(1500, s.pronunciationHoverDelay)) : 350,
       pronunciationRate: typeof s.pronunciationRate === 'number' ? Math.max(0.5, Math.min(1.2, s.pronunciationRate)) : 0.8,
       pronunciationVoiceURI: typeof s.pronunciationVoiceURI === 'string' && s.pronunciationVoiceURI.length <= 256 ? s.pronunciationVoiceURI : '',
@@ -155,43 +163,65 @@ var PronunciationController = (function () {
     if (!popoverEl) return;
     popoverEl.setAttribute('data-state', newState);
     if (wordEl) wordEl.textContent = currentWord || '';
+    var pronunciationActive = settings.pronunciationEnabled;
     if (buttonEl) {
-      buttonEl.disabled = (newState === 'unavailable' || newState === 'disabled');
-      if (newState === 'speaking') {
-        buttonEl.textContent = '\u25A0';
-        buttonEl.setAttribute('aria-label', 'Stop');
+      if (!pronunciationActive) {
+        buttonEl.style.display = 'none';
       } else {
-        buttonEl.textContent = '\u25B6';
-        buttonEl.setAttribute('aria-label', currentWord ? 'Pronounce ' + currentWord : 'Pronounce');
+        buttonEl.style.display = '';
+        buttonEl.disabled = (newState === 'unavailable' || newState === 'disabled');
+        if (newState === 'speaking') {
+          buttonEl.textContent = '\u25A0';
+          buttonEl.setAttribute('aria-label', 'Stop');
+        } else {
+          buttonEl.textContent = '\u25B6';
+          buttonEl.setAttribute('aria-label', currentWord ? 'Pronounce ' + currentWord : 'Pronounce');
+        }
       }
     }
     if (statusEl) {
-      switch (newState) {
-        case 'unavailable':
-          statusEl.textContent = 'No German voice available';
-          break;
-        case 'error':
-          statusEl.textContent = 'Pronunciation failed';
-          break;
-        case 'disabled':
-          statusEl.textContent = 'Pronunciation disabled';
-          break;
-        default:
-          statusEl.textContent = '';
+      statusEl.textContent = '';
+    }
+    if (voiceInfoEl) {
+      if (newState === 'unavailable' && pronunciationActive) {
+        voiceInfoEl.style.display = 'block';
+        if (voiceWhyBtnEl) voiceWhyBtnEl.textContent = 'Learn why';
+        if (voiceExplanationEl) {
+          if (voiceInfoOpen) {
+            voiceExplanationEl.style.display = 'block';
+          } else {
+            voiceExplanationEl.style.display = 'none';
+          }
+        }
+      } else {
+        voiceInfoEl.style.display = 'none';
+        voiceInfoOpen = false;
       }
     }
   }
 
   function updatePopoverState() {
-    if (!settings.pronunciationEnabled) {
+    var pronunciationActive = settings.pronunciationEnabled;
+    var translationActive = settings.translationEnabled;
+    if (!pronunciationActive && !translationActive) {
       setPopoverState('disabled');
       return;
     }
-    if (!selectedVoice) {
+    if (pronunciationActive && !selectedVoice) {
       setPopoverState('unavailable');
       return;
     }
     setPopoverState('ready');
+  }
+
+  function toggleVoiceInfo() {
+    voiceInfoOpen = !voiceInfoOpen;
+    if (voiceExplanationEl) {
+      voiceExplanationEl.style.display = voiceInfoOpen ? 'block' : 'none';
+    }
+    if (voiceWhyBtnEl) {
+      voiceWhyBtnEl.textContent = voiceInfoOpen ? 'Hide' : 'Learn why';
+    }
   }
 
   function buildPopover() {
@@ -206,13 +236,16 @@ var PronunciationController = (function () {
       '  position:fixed; pointer-events:auto; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
       '  font-size:13px; background:#ffffff; border:1px solid #e5e7eb; border-radius:8px;',
       '  padding:10px 14px; box-shadow:0 4px 12px rgba(0,0,0,0.12);',
-      '  display:flex; align-items:flex-start; gap:10px; min-width:140px;',
+      '  display:flex; flex-direction:column; gap:6px; min-width:150px;',
       '  opacity:0; transition:opacity 0.15s ease;',
       '}',
       '#popover[data-state="hidden"], #popover:not([data-state]) { display:none; }',
       '#popover[data-state="ready"], #popover[data-state="speaking"], #popover[data-state="unavailable"], #popover[data-state="error"], #popover[data-state="disabled"] { display:flex; opacity:1; }',
-      '.info { display:flex; flex-direction:column; gap:2px; }',
+      '.top-row { display:flex; align-items:flex-start; gap:10px; }',
+      '.info { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }',
       '#word { font-weight:500; color:#1f2937; white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis; }',
+      '#lemma { font-size:11px; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }',
+      '#lemma:empty { display:none; }',
       '#translation { font-size:12px; color:#6b7280; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }',
       '#translation:empty { display:none; }',
       '#lang { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.03em; }',
@@ -225,18 +258,39 @@ var PronunciationController = (function () {
       '#play:hover { background:#1d4ed8; }',
       '#play:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }',
       '#play:disabled { background:#d1d5db; cursor:default; }',
-      '#status { font-size:11px; color:#dc2626; max-width:120px; }',
+      '#voiceInfo { display:none; margin-top:2px; }',
+      '#voiceWhyBtn {',
+      '  font-size:11px; color:#2563eb; background:none; border:none; padding:0; cursor:pointer; text-decoration:none;',
+      '}',
+      '#voiceWhyBtn:hover { text-decoration:underline; }',
+      '#voiceExplanation {',
+      '  display:none; font-size:11px; color:#6b7280; line-height:1.4; margin-top:4px; max-width:200px;',
+      '}',
+      '#voiceExplanation a { color:#2563eb; }',
       '@media (prefers-reduced-motion:reduce) { #popover { transition:none; } }',
     ].join('');
     var html = [
       '<div id="popover" data-state="hidden" role="tooltip">',
-      '  <div class="info">',
-      '    <div id="word"></div>',
-      '    <div id="translation"></div>',
-      '    <div id="lang">DE</div>',
+      '  <div class="top-row">',
+      '    <div class="info">',
+      '      <div id="word"></div>',
+      '      <div id="lemma"></div>',
+      '      <div id="translation"></div>',
+      '    </div>',
+      '    <div>',
+      '      <div id="lang">DE</div>',
+      '      <button id="play" aria-label="Pronounce" disabled>\u25B6</button>',
+      '    </div>',
       '  </div>',
-      '  <button id="play" aria-label="Pronounce" disabled>\u25B6</button>',
-      '  <div id="status"></div>',
+      '  <div id="voiceInfo">',
+      '    <button id="voiceWhyBtn">Learn why</button>',
+    '    <div id="voiceExplanation">',
+    '      LinguaTint uses German voices installed on your device.',
+    '      To add one, install German language support in your system settings:',
+    '      Windows: Settings \u2192 Time &amp; Language \u2192 Language \u2192 Add German.',
+    '      macOS: System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 German.',
+    '    </div>',
+      '  </div>',
       '</div>',
     ].join('');
     shadowRoot.appendChild(style);
@@ -245,21 +299,27 @@ var PronunciationController = (function () {
     shadowRoot.appendChild(wrapper);
     popoverEl = shadowRoot.getElementById('popover');
     wordEl = shadowRoot.getElementById('word');
+    lemmaEl = shadowRoot.getElementById('lemma');
     translationEl = shadowRoot.getElementById('translation');
     buttonEl = shadowRoot.getElementById('play');
-    statusEl = shadowRoot.getElementById('status');
+    voiceInfoEl = shadowRoot.getElementById('voiceInfo');
+    voiceWhyBtnEl = shadowRoot.getElementById('voiceWhyBtn');
+    voiceExplanationEl = shadowRoot.getElementById('voiceExplanation');
     buttonEl.addEventListener('click', function () {
       if (isSpeaking) { stop(); return; }
       if (currentWord) speakWord(currentWord);
     });
+    if (voiceWhyBtnEl) {
+      voiceWhyBtnEl.addEventListener('click', toggleVoiceInfo);
+    }
     document.documentElement.appendChild(host);
   }
 
   function positionPopover(clientRect) {
     if (!popoverEl || !clientRect) return;
     var popoverRect = popoverEl.getBoundingClientRect();
-    var popoverW = popoverRect.width || 160;
-    var popoverH = popoverRect.height || 50;
+    var popoverW = popoverRect.width || 170;
+    var popoverH = popoverRect.height || 70;
     var margin = 8;
     var wordCenterX = clientRect.left + clientRect.width / 2;
     var wordTop = clientRect.top;
@@ -277,53 +337,101 @@ var PronunciationController = (function () {
     var gen = hoverGeneration;
     if (!popoverEl) buildPopover();
 
-    if (translationEl) {
-      if (typeof GermanTranslations !== 'undefined') {
-        var status = GermanTranslations.getStatus();
-        if (status === 'checking') {
-          translationEl.textContent = 'Preparing translation...';
-        } else if (status === 'downloading') {
-          var prog = GermanTranslations.getDownloadProgress();
-          if (prog && prog.total) {
-            translationEl.textContent = 'Downloading translator... ' + Math.round(prog.loaded * 100 / prog.total) + '%';
-          } else {
-            translationEl.textContent = 'Downloading translator...';
-          }
-        } else if (status === 'unavailable') {
-          translationEl.textContent = 'Translation unavailable';
-        } else {
-          translationEl.textContent = '';
-        }
+    var pronunciationActive = settings.pronunciationEnabled;
+    var translationActive = settings.translationEnabled;
 
-        GermanTranslations.translate(word).then(function (result) {
-          if (gen !== hoverGeneration) return;
-          if (result && result.translations && result.translations.length > 0) {
-            translationEl.textContent = result.translations.join(', ');
-          } else if (translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent.indexOf('Preparing') >= 0 || translationEl.textContent === '') {
-            translationEl.textContent = '';
-          }
-        });
+    // Reset optional elements
+    if (lemmaEl) lemmaEl.textContent = '';
+    if (translationEl) translationEl.textContent = '';
+
+    // Translation lookup (synchronous lemma/gender + async translate)
+    if (translationActive && typeof GermanTranslations !== 'undefined') {
+      var status = GermanTranslations.getStatus();
+      if (status === 'checking') {
+        translationEl.textContent = 'Preparing translation...';
+      } else if (status === 'downloading') {
+        var prog = GermanTranslations.getDownloadProgress();
+        if (prog && prog.total) {
+          translationEl.textContent = 'Downloading translator... ' + Math.round(prog.loaded * 100 / prog.total) + '%';
+        } else {
+          translationEl.textContent = 'Downloading translator...';
+        }
+      } else if (status === 'unsupported' || status === 'error') {
+        translationEl.textContent = '';
       } else {
         translationEl.textContent = '';
       }
+
+      // Synchronous lookup for lemma/gender
+      var lookupResult = GermanTranslations.lookup(word);
+      if (lookupResult && lookupResult.found) {
+        var lemma = lookupResult.lemma;
+        var hasForm = lemma && lemma !== lookupResult.normalized;
+        if (hasForm && lemmaEl) {
+          var article = lookupResult.gender ? ARTICLES[lookupResult.gender] || '' : '';
+          if (article) {
+            lemmaEl.textContent = article + ' ' + lemma;
+          } else {
+            lemmaEl.textContent = lemma;
+          }
+        } else if (!hasForm && lookupResult.gender && lemmaEl) {
+          var article2 = ARTICLES[lookupResult.gender];
+          if (article2) {
+            lemmaEl.textContent = article2 + ' ' + lookupResult.normalized;
+          }
+        }
+      }
+
+      GermanTranslations.translate(word).then(function (result) {
+        if (gen !== hoverGeneration) return;
+        if (result && result.translations && result.translations.length > 0) {
+          translationEl.textContent = result.translations.join(', ');
+        }
+        // Update lemma from async result if more complete
+        if (result && result.found && lemmaEl && !lemmaEl.textContent) {
+          var resLemma = result.lemma;
+          var resNorm = result.normalized;
+          var hasForm = resLemma && resLemma !== resNorm;
+          if (hasForm) {
+            var article = result.gender ? ARTICLES[result.gender] || '' : '';
+            lemmaEl.textContent = article ? article + ' ' + resLemma : resLemma;
+          } else if (result.gender) {
+            var article2 = ARTICLES[result.gender];
+            if (article2) lemmaEl.textContent = article2 + ' ' + resNorm;
+          }
+        }
+      });
     }
 
-    updatePopoverState();
-    if (popoverState === 'disabled' || popoverState === 'unavailable') {
-      wordEl.textContent = word;
-      positionPopover(clientRect);
+    // Determine state based on active features
+    if (pronunciationActive && !selectedVoice) {
+      setPopoverState('unavailable');
+    } else if (!pronunciationActive && translationActive) {
+      setPopoverState('ready');
+    } else if (pronunciationActive) {
+      setPopoverState('ready');
+    } else {
+      setPopoverState('disabled');
       return;
     }
+
+    if (popoverState === 'disabled') return;
+
     wordEl.textContent = word;
     positionPopover(clientRect);
-    setPopoverState('ready');
+
+    if (pronunciationActive && selectedVoice) {
+      setPopoverState('ready');
+    }
   }
 
   function hidePopover() {
     currentWord = '';
     currentRect = null;
     hoverGeneration++;
+    if (lemmaEl) lemmaEl.textContent = '';
     if (translationEl) translationEl.textContent = '';
+    voiceInfoOpen = false;
     if (popoverEl) {
       setPopoverState('hidden');
       popoverEl.style.left = '';
@@ -332,7 +440,7 @@ var PronunciationController = (function () {
   }
 
   function handlePointerMove(e) {
-    if (!settings.pronunciationEnabled) return;
+    if (!settings.pronunciationEnabled && !settings.translationEnabled) return;
     if (isDestroyed) return;
     var target = e.target;
     if (!target || !target.closest) return;
@@ -518,9 +626,13 @@ var PronunciationController = (function () {
       if (translationEl.textContent === 'Preparing translation...' || translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent === '') {
         translationEl.textContent = '';
       }
-    } else if (status === 'unavailable') {
-      if (!translationEl.textContent || translationEl.textContent === 'Preparing translation...' || translationEl.textContent.indexOf('Downloading') >= 0) {
-        translationEl.textContent = 'Translation unavailable';
+    } else if (status === 'error') {
+      if (!translationEl.textContent || translationEl.textContent.indexOf('Downloading') >= 0 || translationEl.textContent === 'Preparing translation...') {
+        translationEl.textContent = '';
+      }
+    } else if (status === 'unsupported') {
+      if (!translationEl.textContent || translationEl.textContent === 'Preparing translation...') {
+        translationEl.textContent = '';
       }
     }
   }
@@ -541,7 +653,7 @@ var PronunciationController = (function () {
 
   function update(options) {
     settings = validatePronunciationSettings(options || {});
-    if (!settings.pronunciationEnabled) {
+    if (!settings.pronunciationEnabled && !settings.translationEnabled) {
       stop();
       hidePopover();
       setPopoverState('disabled');
@@ -563,9 +675,13 @@ var PronunciationController = (function () {
     shadowRoot = null;
     popoverEl = null;
     wordEl = null;
+    lemmaEl = null;
     translationEl = null;
     buttonEl = null;
     statusEl = null;
+    voiceInfoEl = null;
+    voiceWhyBtnEl = null;
+    voiceExplanationEl = null;
     availableVoices = [];
     selectedVoice = null;
     currentWord = '';
@@ -585,7 +701,6 @@ var PronunciationController = (function () {
     getSelectedVoice: function () { return selectedVoice; },
     getState: function () { return popoverState; },
     getWord: function () { return currentWord; },
-    // exposed pure functions for testing
     _normalize: normalizePronunciationWord,
     _findSegment: findWordSegment,
     _selectVoice: selectGermanVoice,
