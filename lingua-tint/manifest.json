@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LinguaTint",
   "version": "1.0.0",
-  "description": "Colorea automáticamente cada idioma en textos bilingües. Ideal para aprender idiomas en NotebookLM.",
+  "description": "Colorizes German and Spanish text in bilingual content. Ideal for language learners in NotebookLM.",
   "permissions": ["storage"],
   "content_scripts": [{
     "matches": ["<all_urls>"],
