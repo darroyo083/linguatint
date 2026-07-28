@@ -97,35 +97,40 @@
           </label>
         </div>
         <div id="pronunciationOptions" class="aid-options">
-          <div class="aid-option-row">
-            <span class="aid-option-label">Voz</span>
-            <select id="pronunciationVoice" class="aid-select" disabled>
-              <option value="">Cargando...</option>
-            </select>
+          <div id="voiceNoVoice" class="aid-no-voice" style="display:none">
+            <span class="aid-no-voice-text">⚠ German voice unavailable</span>
             <span id="voiceHelpLink" class="aid-help-link">Learn why</span>
           </div>
-          <div class="aid-option-row">
-            <span class="aid-option-label">Velocidad</span>
-            <div class="aid-speed">
-              <label class="speed-radio">
-                <input type="radio" name="pronRate" value="0.5">
-                <span>0.5</span>
-              </label>
-              <label class="speed-radio">
-                <input type="radio" name="pronRate" value="0.8">
-                <span>0.8</span>
-              </label>
-              <label class="speed-radio">
-                <input type="radio" name="pronRate" value="1.0">
-                <span>1.0</span>
-              </label>
-            </div>
-          </div>
-          <button id="pronunciationTest" class="aid-action-btn" disabled>▶ Escuchar</button>
           <div id="voiceExplanation" class="aid-voice-explanation" style="display:none">
-            <p>LinguaTint uses German voices installed on your device. Your system does not currently provide a compatible German voice.</p>
-            <p>Windows: Settings → Time & Language → Language → Add German.</p>
-            <p>macOS: System Settings → Accessibility → Spoken Content → System Voice → German.</p>
+            LinguaTint uses German voices from your device. None found.<br>
+            Windows: Settings → Time &amp; Language → Language → Add German<br>
+            macOS: System Settings → Accessibility → Spoken Content → System Voice → German
+          </div>
+          <div id="voiceControls" style="display:none">
+            <div class="aid-option-row">
+              <span class="aid-option-label">Voz</span>
+              <select id="pronunciationVoice" class="aid-select" disabled>
+                <option value="">Cargando...</option>
+              </select>
+            </div>
+            <div class="aid-option-row">
+              <span class="aid-option-label">Velocidad</span>
+              <div class="aid-speed">
+                <label class="speed-radio">
+                  <input type="radio" name="pronRate" value="0.5">
+                  <span>0.5</span>
+                </label>
+                <label class="speed-radio">
+                  <input type="radio" name="pronRate" value="0.8">
+                  <span>0.8</span>
+                </label>
+                <label class="speed-radio">
+                  <input type="radio" name="pronRate" value="1.0">
+                  <span>1.0</span>
+                </label>
+              </div>
+            </div>
+            <button id="pronunciationTest" class="aid-action-btn" disabled>▶ Escuchar</button>
           </div>
         </div>
       </div>

@@ -40,7 +40,13 @@ function updatePronOptions(settings) {
     opts.style.display = 'block';
   } else {
     opts.style.display = 'none';
+    return;
   }
+  var hasVoice = germanVoices.length > 0;
+  var noVoiceEl = $('voiceNoVoice');
+  var controlsEl = $('voiceControls');
+  if (noVoiceEl) noVoiceEl.style.display = hasVoice ? 'none' : 'flex';
+  if (controlsEl) controlsEl.style.display = hasVoice ? 'block' : 'none';
 }
 
 function populateVoiceSelect(preferredURI) {
@@ -78,6 +84,7 @@ function refreshGermanVoices() {
   }
   chrome.storage.sync.get(DEFAULTS, function (settings) {
     populateVoiceSelect(settings.pronunciationVoiceURI);
+    updatePronOptions(settings);
   });
 }
 
@@ -216,6 +223,8 @@ function setTranslationState(state, pct) {
   progress.style.display = 'none';
   actionRow.style.display = 'none';
   icon.style.color = '';
+  icon.style.display = '';
+  title.style.color = '';
 
   switch (state) {
     case 'checking':
@@ -246,6 +255,10 @@ function setTranslationState(state, pct) {
       icon.style.color = '#16a34a';
       title.textContent = 'Ready';
       detail.textContent = '';
+      // Compact: hide icon when ready, show "✓ Ready" in title
+      icon.style.display = 'none';
+      title.textContent = '\u2713 Ready';
+      title.style.color = '#16a34a';
       break;
     case 'error':
       icon.textContent = '\u2717';
@@ -330,4 +343,5 @@ if (window.speechSynthesis) {
 }
 
 checkTranslationAvailability();
+updatePronOptions({ pronunciationEnabled: $('pronunciationEnabled') ? $('pronunciationEnabled').checked : true });
 loadSettings();
