@@ -9,8 +9,6 @@ var PronunciationController = (function () {
   var availableVoices = [];
   var selectedVoice = null;
   var voiceLoadAttempted = false;
-  var voiceInfoOpen = false;
-
   var currentWord = '';
   var currentRect = null;
   var hoverGeneration = 0;
@@ -183,20 +181,8 @@ var PronunciationController = (function () {
       statusEl.textContent = '';
     }
     if (voiceInfoEl) {
-      if (newState === 'unavailable' && pronunciationActive) {
-        voiceInfoEl.style.display = 'block';
-        if (voiceWhyBtnEl) voiceWhyBtnEl.textContent = 'Learn why';
-        if (voiceExplanationEl) {
-          if (voiceInfoOpen) {
-            voiceExplanationEl.style.display = 'block';
-          } else {
-            voiceExplanationEl.style.display = 'none';
-          }
-        }
-      } else {
-        voiceInfoEl.style.display = 'none';
-        voiceInfoOpen = false;
-      }
+      voiceInfoEl.style.display = 'none';
+      voiceInfoOpen = false;
     }
   }
 
@@ -282,15 +268,7 @@ var PronunciationController = (function () {
       '      <button id="play" aria-label="Pronounce" disabled>\u25B6</button>',
       '    </div>',
       '  </div>',
-      '  <div id="voiceInfo">',
-      '    <button id="voiceWhyBtn">Learn why</button>',
-    '    <div id="voiceExplanation">',
-    '      LinguaTint uses German voices installed on your device.',
-    '      To add one, install German language support in your system settings:',
-    '      Windows: Settings \u2192 Time &amp; Language \u2192 Language \u2192 Add German.',
-    '      macOS: System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 German.',
-    '    </div>',
-      '  </div>',
+,
       '</div>',
     ].join('');
     shadowRoot.appendChild(style);
@@ -309,9 +287,7 @@ var PronunciationController = (function () {
       if (isSpeaking) { stop(); return; }
       if (currentWord) speakWord(currentWord);
     });
-    if (voiceWhyBtnEl) {
-      voiceWhyBtnEl.addEventListener('click', toggleVoiceInfo);
-    }
+
     document.documentElement.appendChild(host);
   }
 
@@ -656,11 +632,13 @@ var PronunciationController = (function () {
     if (!settings.pronunciationEnabled && !settings.translationEnabled) {
       stop();
       hidePopover();
-      setPopoverState('disabled');
+      if (popoverEl) setPopoverState('disabled');
       return;
     }
     selectedVoice = selectGermanVoice(availableVoices, settings.pronunciationVoiceURI);
-    updatePopoverState();
+    if (popoverEl && popoverState !== 'hidden') {
+      updatePopoverState();
+    }
   }
 
   function destroy() {
@@ -680,8 +658,6 @@ var PronunciationController = (function () {
     buttonEl = null;
     statusEl = null;
     voiceInfoEl = null;
-    voiceWhyBtnEl = null;
-    voiceExplanationEl = null;
     availableVoices = [];
     selectedVoice = null;
     currentWord = '';

@@ -62,66 +62,73 @@
       </div>
     </section>
 
-    <section class="section" id="pronunciation-section">
-      <h2>Pronunciación alemana</h2>
-      <label class="toggle-row">
-        <span class="toggle-label">Traducción</span>
-        <label class="switch">
-          <input type="checkbox" id="translationEnabled">
-          <span class="slider"></span>
-        </label>
-      </label>
-      <label class="toggle-row" style="margin-top:8px">
-        <span class="toggle-label">Pronunciación</span>
-        <label class="switch">
-          <input type="checkbox" id="pronunciationEnabled">
-          <span class="slider"></span>
-        </label>
-      </label>
+    <section class="section" id="word-aids-section">
+      <h2>Ayudas de palabra</h2>
 
-      <div class="pron-row">
-        <span class="pron-label">Voz</span>
-        <select id="pronunciationVoice" class="pron-select" disabled>
-          <option value="">Cargando...</option>
-        </select>
-      </div>
-
-      <div class="pron-row">
-        <span class="pron-label">Velocidad</span>
-        <div class="pron-speed">
-          <label class="speed-radio">
-            <input type="radio" name="pronRate" value="0.5">
-            <span>0.5</span>
+      <div class="aid-row">
+        <div class="aid-toggle-row">
+          <span class="toggle-label">Traducción</span>
+          <label class="switch">
+            <input type="checkbox" id="translationEnabled">
+            <span class="slider"></span>
           </label>
-          <label class="speed-radio">
-            <input type="radio" name="pronRate" value="0.8">
-            <span>0.8</span>
-          </label>
-          <label class="speed-radio">
-            <input type="radio" name="pronRate" value="1.0">
-            <span>1.0</span>
-          </label>
+        </div>
+        <div id="translationStatus" class="trans-status">
+          <div class="trans-status-icon" id="translationIcon"></div>
+          <div class="trans-status-info">
+            <div class="trans-status-title" id="translationTitle"></div>
+            <div class="trans-status-detail" id="translationDetail"></div>
+            <div class="trans-progress-bar" id="translationProgress">
+              <div class="trans-progress-fill" id="translationProgressFill"></div>
+            </div>
+          </div>
+        </div>
+        <div id="translationActionRow" style="display:none">
+          <button id="translationAction" class="aid-action-btn">Download model</button>
         </div>
       </div>
 
-      <button id="pronunciationTest" class="pron-test" disabled>
-        ▶ Escuchar
-      </button>
-    </section>
-
-    <section class="section" id="translation-section">
-      <h2>Traducción alemán → español</h2>
-      <div id="translationStatus" class="trans-status">
-        <div class="trans-status-icon" id="translationIcon"></div>
-        <div class="trans-status-info">
-          <div class="trans-status-title" id="translationTitle">Comprobando...</div>
-          <div class="trans-status-detail" id="translationDetail"></div>
-          <div class="trans-progress-bar" id="translationProgress">
-            <div class="trans-progress-fill" id="translationProgressFill"></div>
+      <div class="aid-row">
+        <div class="aid-toggle-row">
+          <span class="toggle-label">Pronunciación</span>
+          <label class="switch">
+            <input type="checkbox" id="pronunciationEnabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="pronunciationOptions" class="aid-options">
+          <div class="aid-option-row">
+            <span class="aid-option-label">Voz</span>
+            <select id="pronunciationVoice" class="aid-select" disabled>
+              <option value="">Cargando...</option>
+            </select>
+            <span id="voiceHelpLink" class="aid-help-link">Learn why</span>
+          </div>
+          <div class="aid-option-row">
+            <span class="aid-option-label">Velocidad</span>
+            <div class="aid-speed">
+              <label class="speed-radio">
+                <input type="radio" name="pronRate" value="0.5">
+                <span>0.5</span>
+              </label>
+              <label class="speed-radio">
+                <input type="radio" name="pronRate" value="0.8">
+                <span>0.8</span>
+              </label>
+              <label class="speed-radio">
+                <input type="radio" name="pronRate" value="1.0">
+                <span>1.0</span>
+              </label>
+            </div>
+          </div>
+          <button id="pronunciationTest" class="aid-action-btn" disabled>▶ Escuchar</button>
+          <div id="voiceExplanation" class="aid-voice-explanation" style="display:none">
+            <p>LinguaTint uses German voices installed on your device. Your system does not currently provide a compatible German voice.</p>
+            <p>Windows: Settings → Time & Language → Language → Add German.</p>
+            <p>macOS: System Settings → Accessibility → Spoken Content → System Voice → German.</p>
           </div>
         </div>
       </div>
-      <button id="translationAction" class="pron-test trans-action" style="display:none">Descargar modelo</button>
     </section>
   </div>
   <script src="../content/defaults.js"></script>

@@ -6,6 +6,7 @@ const $ = function (id) {
 
 var germanVoices = [];
 var popupSpeech = null;
+var voiceExplanationOpen = false;
 
 function loadSettings() {
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
@@ -28,8 +29,18 @@ function render(settings) {
   var rateRadio = document.querySelector('input[name="pronRate"][value="' + settings.pronunciationRate + '"]');
   if (rateRadio) rateRadio.checked = true;
   populateVoiceSelect(settings.pronunciationVoiceURI);
-  updatePronTestButton(settings);
+  updatePronOptions(settings);
   updatePreview(settings);
+}
+
+function updatePronOptions(settings) {
+  var opts = $('pronunciationOptions');
+  if (!opts) return;
+  if (settings.pronunciationEnabled) {
+    opts.style.display = 'block';
+  } else {
+    opts.style.display = 'none';
+  }
 }
 
 function populateVoiceSelect(preferredURI) {
@@ -56,23 +67,6 @@ function populateVoiceSelect(preferredURI) {
   }
 }
 
-function updatePronTestButton(settings) {
-  var btn = $('pronunciationTest');
-  if (!btn) return;
-  if (!settings.pronunciationEnabled) {
-    btn.disabled = true;
-    return;
-  }
-  var hasVoice = germanVoices.length > 0;
-  if (hasVoice) {
-    var pref = $('pronunciationVoice').value;
-    var selected = germanVoices.some(function (v) { return v.voiceURI === pref; });
-    btn.disabled = !selected;
-  } else {
-    btn.disabled = true;
-  }
-}
-
 function refreshGermanVoices() {
   var allVoices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
   germanVoices = [];
@@ -84,7 +78,6 @@ function refreshGermanVoices() {
   }
   chrome.storage.sync.get(DEFAULTS, function (settings) {
     populateVoiceSelect(settings.pronunciationVoiceURI);
-    updatePronTestButton(settings);
   });
 }
 
@@ -163,12 +156,11 @@ $('translationEnabled').addEventListener('change', function (e) {
 
 $('pronunciationEnabled').addEventListener('change', function (e) {
   saveSetting('pronunciationEnabled', e.target.checked);
-  updatePronTestButton({ pronunciationEnabled: e.target.checked });
+  updatePronOptions({ pronunciationEnabled: e.target.checked });
 });
 
 $('pronunciationVoice').addEventListener('change', function (e) {
   saveSetting('pronunciationVoiceURI', e.target.value);
-  updatePronTestButton({ pronunciationEnabled: $('pronunciationEnabled').checked });
 });
 
 var rateRadios = document.querySelectorAll('input[name="pronRate"]');
@@ -199,6 +191,14 @@ $('pronunciationTest').addEventListener('click', function () {
   window.speechSynthesis.speak(utterance);
 });
 
+$('voiceHelpLink').addEventListener('click', function () {
+  voiceExplanationOpen = !voiceExplanationOpen;
+  var expl = $('voiceExplanation');
+  if (expl) {
+    expl.style.display = voiceExplanationOpen ? 'block' : 'none';
+  }
+});
+
 // Translation model management
 var translationDownloading = false;
 
@@ -208,26 +208,27 @@ function setTranslationState(state, pct) {
   var detail = $('translationDetail');
   var progress = $('translationProgress');
   var fill = $('translationProgressFill');
+  var actionRow = $('translationActionRow');
   var action = $('translationAction');
 
-  if (!icon || !title || !detail || !progress || !fill || !action) return;
+  if (!icon || !title || !detail || !progress || !fill || !actionRow || !action) return;
 
   progress.style.display = 'none';
-  action.style.display = 'none';
+  actionRow.style.display = 'none';
   icon.style.color = '';
 
   switch (state) {
     case 'checking':
       icon.textContent = '\u23F3';
-      title.textContent = 'Checking translation model...';
+      title.textContent = 'Checking model...';
       detail.textContent = '';
       break;
     case 'downloadable':
       icon.textContent = '\u21E9';
-      title.textContent = 'Translation model required';
-      detail.textContent = 'German \u2192 Spanish on-device';
-      action.textContent = 'Download model';
-      action.style.display = 'block';
+      title.textContent = 'Model required';
+      detail.textContent = '';
+      actionRow.style.display = 'block';
+      action.textContent = 'Download';
       action.disabled = false;
       break;
     case 'downloading':
@@ -236,7 +237,7 @@ function setTranslationState(state, pct) {
       detail.textContent = pct !== undefined ? pct + '%' : '';
       progress.style.display = 'block';
       fill.style.width = (pct !== undefined ? pct : 0) + '%';
-      action.style.display = 'block';
+      actionRow.style.display = 'block';
       action.textContent = 'Downloading...';
       action.disabled = true;
       break;
@@ -244,22 +245,22 @@ function setTranslationState(state, pct) {
       icon.textContent = '\u2713';
       icon.style.color = '#16a34a';
       title.textContent = 'Ready';
-      detail.textContent = 'German \u2192 Spanish on-device';
+      detail.textContent = '';
       break;
     case 'error':
       icon.textContent = '\u2717';
       icon.style.color = '#dc2626';
       title.textContent = 'Download failed';
-      detail.textContent = 'Could not download translation model';
-      action.textContent = 'Try again';
-      action.style.display = 'block';
+      detail.textContent = '';
+      actionRow.style.display = 'block';
+      action.textContent = 'Retry';
       action.disabled = false;
       break;
     case 'unsupported':
       icon.textContent = '\u2717';
       icon.style.color = '#9ca3af';
       title.textContent = 'Not supported';
-      detail.textContent = 'Chrome Translator API not available';
+      detail.textContent = '';
       break;
     default:
       icon.textContent = '';
@@ -274,20 +275,13 @@ function checkTranslationAvailability() {
     return;
   }
   setTranslationState('checking');
-  // Use availability() to check. NEVER create() - that could auto-download.
-  Translator.availability({
+  Translator.create({
     sourceLanguage: 'de',
     targetLanguage: 'es'
-  }).then(function (availability) {
-    if (availability === 'available') {
-      setTranslationState('available');
-    } else if (availability === 'downloadable') {
-      setTranslationState('downloadable');
-    } else {
-      setTranslationState('unsupported');
-    }
+  }).then(function () {
+    setTranslationState('available');
   }).catch(function () {
-    setTranslationState('unsupported');
+    setTranslationState('downloadable');
   });
 }
 
@@ -308,7 +302,6 @@ function startModelDownload() {
   }).then(function () {
     translationDownloading = false;
     setTranslationState('available');
-    // Set consent flag for content script to safely call create()
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ translationConsented: true });
     }
@@ -319,10 +312,7 @@ function startModelDownload() {
 }
 
 $('translationAction').addEventListener('click', function () {
-  var state = this.textContent;
-  if (state === 'Download model' || state === 'Try again' || state === 'Descargar modelo' || state === 'Intentar de nuevo') {
-    startModelDownload();
-  }
+  startModelDownload();
 });
 
 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
@@ -339,7 +329,5 @@ if (window.speechSynthesis) {
   window.speechSynthesis.addEventListener('voiceschanged', refreshGermanVoices);
 }
 
-// Check translation availability on load
 checkTranslationAvailability();
-
 loadSettings();
