@@ -2,12 +2,12 @@
 
 let settings = { ...DEFAULTS };
 
-const NOTEBOOKLM_HOST = 'notebooklm.google.com';
+const NOTEBOOKLM_HOSTS = new Set(['notebooklm.google.com', 'notebook.google.com']);
 const NOTEBOOKLM_SELECTOR = 'chat-panel, chat-message, chat-message-pair, chat-panel-header, .chat-panel, .chat-panel-content, .chat-message, .chat-history';
 const OWNED_SELECTOR = '[data-lingua-tint-owned="true"]';
 
 function isNotebookLM() {
-  return location.hostname === NOTEBOOKLM_HOST;
+  return NOTEBOOKLM_HOSTS.has(location.hostname);
 }
 
 function isSkippedAncestor(el) {
